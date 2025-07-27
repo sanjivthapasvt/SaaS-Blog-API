@@ -6,6 +6,7 @@ from auth.models import User
 from auth.schemas import UserCreate, Token, UserRead
 from auth.utils import hash_password, verify_password
 from auth.auth import create_access_token, get_current_user
+
 router = APIRouter()
 
 @router.post("/register", response_model=Token)
