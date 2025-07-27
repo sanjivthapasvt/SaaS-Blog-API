@@ -1,7 +1,7 @@
 [project]
 name = "saas-blog-api"
 version = "0.1.0"
-description = "Add your description here"
+description = "fastapi api for saas-blog site"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
