@@ -23,7 +23,7 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
             raise HTTPException(status_code=403, detail="Password length shoudl be greater than 6")
     validate_password(user_data.password)
 
-    full_name = f"{user_data.first_name} {user_data.last_name}"
+    full_name = f"{(user_data.first_name).capitalize()} {(user_data.last_name).capitalize()}"
     new_user = User(username=user_data.username,email=user_data.email,full_name=full_name, hashed_password=hash_password(user_data.password))
     session.add(new_user)
     session.commit()
