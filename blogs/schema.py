@@ -1,11 +1,16 @@
-from datetime import datetime
-from sqlmodel import SQLModel, Field
-
-class Blog(SQLModel):
-    id: str | None = Field(default=None, primary_key=True)
+from pydantic import BaseModel
+class BlogCreate(BaseModel):
     title: str
-    thumbnail: str
+    thumbnail: str | None
     content: str
-    uploaded_by: str
-    created_at: str
-    modified_at: str
+
+class CommentsData(BaseModel):
+    id: str | None
+    blog_id: int | None
+    content: str
+    commmented_by: str | None
+    created_at: str | None
+
+class BlogCreated(BaseModel):
+    title: str
+    detail: str
