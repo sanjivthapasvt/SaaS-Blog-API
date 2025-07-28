@@ -1,9 +1,11 @@
+from typing import List
 from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
 from users.models import User, UserFollowLink
 from core.database import Session, get_session
 from auth.auth import get_current_user
 from sqlmodel import select
+from users.schema import UserRead
 router = APIRouter()
 
 @router.post("/follow/{user_id}")
@@ -36,10 +38,11 @@ async def follow_user(
     return {"message": f"You are now following {target_user.username}"}
 
 
-@router.get("/list")
+@router.get("/list", response_model=List[UserRead])
 async def list_all_users(
     session: Session = Depends(get_session),
     current_user:User = Depends(get_current_user)
 ):
-    users = session.exec(select(User).where(User.id != current_user.id)).all()
+    users = session.exec(select(User.id, User.full_name).where(User.id != current_user.id)).all()
+ 
     return users

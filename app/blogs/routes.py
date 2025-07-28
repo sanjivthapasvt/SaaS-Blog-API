@@ -80,5 +80,5 @@ async def get_current_user_blog(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    blogs = session.exec(select(Blog).where(Blog.uploaded_by == User.id)).all()
+    blogs = session.exec(select(Blog).where(Blog.uploaded_by == current_user.id)).all()
     return blogs
