@@ -1,9 +1,10 @@
+from typing import List
 from fastapi import APIRouter, Depends, File, UploadFile, Form
-from auth.models import User
+from users.models import User
 from core.database import get_session
-from sqlmodel import Session
+from sqlmodel import Session, select
 from blogs.models import Blog
-from blogs.schema import CommentsData
+from blogs.schema import CommentsData, BlogRead
 from auth.auth import get_current_user
 from fastapi.exceptions import HTTPException
 import os
@@ -16,6 +17,8 @@ MEDIA_URL = "/media/uploads/blogs"
 UPLOAD_DIR = "media/uploads/blogs"
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/jpg", "image/gif"} #for validation of thumbnail
 
 @router.post("/create")
 async def create_blog_post(
@@ -34,6 +37,11 @@ async def create_blog_post(
         
         #save thumbnail if it is uploaded 
         if thumbnail:
+            if thumbnail.content_type not in ALLOWED_IMAGE_TYPES: #check if the file is image or not
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid file type. Only Jpg, Jpeg, Png and Gif are allowed"
+                )
             # generate a unique filename to avoid conflicts
             filename = f"{uuid.uuid4().hex}_{thumbnail.filename}"
             file_path = os.path.join(UPLOAD_DIR, filename)
@@ -61,3 +69,16 @@ async def create_blog_post(
     
     except Exception as e:
         raise (HTTPException(status_code=500, detail=f"Something went wrong {str(e)}"))
+    
+@router.get("/all", response_model=List[BlogRead])
+async def get_all_blog(session: Session = Depends(get_session)):
+    blogs = session.exec(select(Blog)).all()
+    return blogs
+
+@router.get("/mine", response_model=List[BlogRead])
+async def get_current_user_blog(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    blogs = session.exec(select(Blog).where(Blog.uploaded_by == User.id)).all()
+    return blogs

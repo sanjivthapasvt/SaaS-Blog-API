@@ -1,5 +1,7 @@
 from sqlmodel import SQLModel, Field
 from datetime import datetime
+
+
 class Blog(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     title: str = Field(index=True)
