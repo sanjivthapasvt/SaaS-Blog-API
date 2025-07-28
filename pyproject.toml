@@ -10,5 +10,6 @@ dependencies = [
     "pyjwt>=2.10.1",
     "python-dotenv>=1.1.1",
     "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.20",
     "sqlmodel>=0.0.24",
 ]
