@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from core.database import create_db_and_tables
 from auth.routes import router as auth_router
 from blogs.routes import router as blog_router
+from fastapi.staticfiles import StaticFiles
+
 
 load_dotenv()
 
@@ -16,6 +18,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
+app.mount("/media", StaticFiles(directory="media"), name="media")
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(blog_router, prefix="/blog", tags=["Blog"])
 
