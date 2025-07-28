@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from core.database import get_session
-from auth.models import User
+from users.models import User
 
 import os
 
