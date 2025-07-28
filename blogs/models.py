@@ -3,7 +3,7 @@ from datetime import datetime
 class Blog(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     title: str = Field(index=True)
-    thumbnail: str | None = Field(default=None)
+    thumbnail_url: str | None = Field(default=None)
     content: str
     uploaded_by: int | None = Field(default=None, foreign_key="user.id")
     created_at: str = Field(default=datetime.now())
