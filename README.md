@@ -48,6 +48,8 @@ uv pip install -r pyproject.toml
 ### 3. Run the project
 
 ```bash
+cd app
+
 fastapi dev main.py
 #or
 uvicorn main:app --reload
@@ -63,5 +65,20 @@ Contributions, ideas, suggestions, and feedback are always welcome!
 4. Push to the branch: `git push origin feature/your-feature-name`
 5. Open a pull request 🚀
 
+## 📂 Project Structure (initial)
 
+```
+.
+├── app/
+│   ├── main.py
+│   ├── auth/       # Authentication
+│   ├── blogs/      # Blogs
+│   ├── core/       # Setting, Database
+│   ├── tests/      # Tests
+│   ├── users/      # User Management
+│   └── utils/      # Utilities
+├── pyproject.toml
+├── requirements.txt
+└── README.md
+```
 ---
