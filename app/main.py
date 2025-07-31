@@ -7,6 +7,8 @@ from auth.routes import router as auth_router
 from blogs.routes import router as blog_router
 from fastapi.staticfiles import StaticFiles
 from users.routes import router as users_router
+from fastapi.middleware.cors import CORSMiddleware
+
 
 load_dotenv()
 
@@ -17,6 +19,19 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "http://localhost:8000",
+    "http://localhost:8000"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 app.mount("/media", StaticFiles(directory="media"), name="media")
