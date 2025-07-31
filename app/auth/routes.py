@@ -57,7 +57,3 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{str(e)}")
-
-@router.get("/users/me", response_model=UserRead)
-def read_current_user(current_user: User = Depends(get_current_user)):
-    return current_user
