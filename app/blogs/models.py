@@ -11,9 +11,10 @@ class Blog(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class Comments(SQLModel, table=True):
-    id: str | None = Field(default=None, primary_key=True)
+class Comment(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
     blog_id: int | None = Field(default=None, foreign_key="blog.id")
     content: str
-    commmented_by: str | None = Field(default=None, foreign_key="user.id")
+    commmented_by: int | None = Field(default=None, foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_modified: datetime | None= Field(default=None)
