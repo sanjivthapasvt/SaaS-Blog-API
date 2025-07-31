@@ -4,11 +4,11 @@ from users.models import User
 from core.database import get_session
 from sqlmodel import Session, select
 from blogs.models import Blog
-from blogs.schema import CommentsData, BlogRead
+from blogs.schema import BlogRead
 from blogs.utils import save_thumbnail
 from auth.auth import get_current_user
 from fastapi.exceptions import HTTPException
-import os
+
 
 router = APIRouter()
 
@@ -17,7 +17,7 @@ router = APIRouter()
 async def create_blog_post(
     title: str = Form(...),
     content: str = Form(...),
-    thumbnail: UploadFile | str | None = None,
+    thumbnail: UploadFile | None = None,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
@@ -26,13 +26,7 @@ async def create_blog_post(
         Require multipart/formdata input
     """
     try:
-        if thumbnail == "": #for edge case if user sends empty string insttead of file
-            thumbnail = None
-
-        thumbnail_url = None
-
-        if thumbnail and isinstance(thumbnail, UploadFile):
-            thumbnail_url = save_thumbnail(thumbnail)
+        thumbnail_url = save_thumbnail(thumbnail)
         
         new_blog = Blog(
             title=title,
@@ -60,7 +54,7 @@ async def update_blog_post(
     blog_id: int,
     title: str | None = Form(None),
     content: str | None = Form(None),
-    thumbnail: UploadFile | str | None = None ,
+    thumbnail: UploadFile | None = None ,
     session: Session =  Depends(get_session), 
     current_user:User = Depends(get_current_user)
 ):
@@ -73,13 +67,8 @@ async def update_blog_post(
         if blog_post.uploaded_by != current_user.id:
             raise HTTPException(status_code=401, detail="You are not the owner of the blog")
         
-        if thumbnail == "":
-            thumbnail = None
-            
-        thumbnail_url = None
-
-        if thumbnail and isinstance(thumbnail, UploadFile):
-            thumbnail_url = save_thumbnail(thumbnail)
+        thumbnail_url = save_thumbnail(thumbnail)
+        
         if title:
             blog_post.title = title
         if thumbnail:

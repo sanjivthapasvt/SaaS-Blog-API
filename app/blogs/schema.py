@@ -8,9 +8,9 @@ class BlogRead(BaseModel):
     uploaded_by: int
     created_at: datetime
     
-class CommentsData(BaseModel):
-    blog_id: int | None
+class CommentData(BaseModel):
+    blog_id: int
     content: str
-    commmented_by: str | None
+    commmented_by: int
     created_at: datetime
 
