@@ -93,8 +93,9 @@ def change_password(
     current_user: User = Depends(get_current_user)
 ):
     try:
-        if not verify_password(current_password, current_user.hashed_password):
-            raise HTTPException(status_code=400, detail="Your old password doesn't match")
+        if current_user.hashed_password:
+            if not verify_password(current_password, current_user.hashed_password):
+                raise HTTPException(status_code=400, detail="Your old password doesn't match")
 
         if len(new_password) < 6:
             raise HTTPException(status_code=400, detail="Password length must be greater than 6")
