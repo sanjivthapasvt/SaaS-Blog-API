@@ -1,8 +1,12 @@
 import os
 from urllib.parse import urlencode
 import requests
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
+from sqlmodel import Session, select
+from users.models import User
+from core.database import get_session
+from auth.auth import create_access_token
 
 router = APIRouter()
 
@@ -32,46 +36,75 @@ async def get_google_login_url():
     
     url = "https://accounts.google.com/o/oauth2/auth?" + urlencode(params)
 
-    return RedirectResponse(url=url, status_code=301)
+    return RedirectResponse(url=url, status_code=302)
 
 
 # The google redirect uri should be same as path here 
 # In my case In google I have set GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 # The google returns user info including id, email, name and picture
 @router.get("/google/callback")
-async def auth_google(code: str):
-    token_url = "https://accounts.google.com/o/oauth2/token"
-    data = {
-        "code": code,
-        "client_id": GOOGLE_CLIENT_ID,
-        "client_secret": GOOGLE_CLIENT_SECRET,
-        "redirect_uri": GOOGLE_REDIRECT_URI,
-        "grant_type": "authorization_code",
-    }
-    response = requests.post(token_url, data=data)
-    data = response.json()
-    access_token = data["access_token"]
-    access_token_expires_in = data["expires_in"]
-    refresh_token = data["refresh_token"]
-
-    
-    user_info_resp = requests.get(
-        "https://www.googleapis.com/oauth2/v1/userinfo",
-        headers={"Authorization": f"Bearer {access_token}"})
-    user_info = user_info_resp.json()
-    
-    user_data = {
-        "name": user_info["name"],
-        "email": user_info["email"],
-        "picture": user_info["picture"],
-    }
-
-    #return user info like id, name, email and also access and refresh tokens
-    return {
-        "user": user_data,
-        "token": {
-            "access_token": access_token,
-            "access_token_expires_in": access_token_expires_in,
-            "refresh_token": refresh_token,
+async def auth_google(code: str, session: Session = Depends(get_session)):
+    try:
+        token_url = "https://oauth2.googleapis.com/token"
+        data = {
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": GOOGLE_REDIRECT_URI,
+            "grant_type": "authorization_code",
         }
-    }
+        response = requests.post(token_url, data=data)
+        response.raise_for_status()
+
+        data = response.json()
+        access_token = data["access_token"]
+        
+        user_info_resp = requests.get(
+            "https://www.googleapis.com/oauth2/v1/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"})
+        user_info_resp.raise_for_status()
+        user_info = user_info_resp.json()
+        id = user_info["id"]
+        name = user_info["name"]
+        email = user_info["email"]
+
+        if not name or not email or not id:
+            raise HTTPException(status_code=400, detail="Incomplete user info from Google")
+        
+        user = check_user_exist(user_id=id, session=session)
+
+        if not user:
+            existing_user = session.exec(select(User).where(email == User.email)).first()
+            if existing_user and not existing_user.google_id:
+                existing_user.google_id = id
+                session.commit()
+                session.refresh(existing_user)
+                user = existing_user
+
+            user = create_new_user(user_id=user_info["id"], name=user_info["name"], email=user_info["email"], session=session)
+
+        token = create_access_token({"sub": user.google_id})
+
+        return {"access_token": token, "token_type": "bearer"}
+    
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Something went wrong {str(e)}")
+
+def check_user_exist(user_id: str, session: Session):
+    return session.exec(select(User).where(User.google_id == user_id)).first()
+
+
+
+def create_new_user(user_id: str, name: str, email:str , session: Session):
+    try:
+        
+        user = User(username=None, google_id=user_id ,email=email, full_name=name, is_active=True)
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+        return user
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Something went wrong {str(e)}")

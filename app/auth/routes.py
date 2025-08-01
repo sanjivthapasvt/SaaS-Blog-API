@@ -1,11 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Form
 from sqlmodel import Session, select
 from core.database import get_session
 from users.models import User
-from auth.schemas import UserCreate, Token, UserRead
+from auth.schemas import UserCreate, Token
 from auth.utils import hash_password, verify_password
-from auth.auth import create_access_token, get_current_user
+from auth.auth import create_access_token
 from typing import Optional
 
 router = APIRouter()
@@ -42,10 +41,11 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
+def login(username: str = Form(...), password:str = Form(...), session: Session = Depends(get_session)):
     try:
-        user = session.exec(select(User).where(User.username == form_data.username)).first()
-        if not user or not verify_password(form_data.password, user.hashed_password):
+        user = session.exec(select(User).where(User.username == username)).first()
+        
+        if not user or not verify_password(password, user.hashed_password): # type: ignore
             raise HTTPException(status_code=400, detail="Incorrect username or password")
 
         token = create_access_token({"sub": user.username})
