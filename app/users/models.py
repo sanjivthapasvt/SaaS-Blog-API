@@ -10,8 +10,8 @@ class UserFollowLink(SQLModel, table=True):
 
 class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    google_id: str | None = Field(default=None, unique=True)
-    username: str | None = Field(unique=True, index=True,)
+    google_id: str | None = Field(default=None, unique=True, index=True)
+    username: str | None = Field(unique=True, index=True)
     email: str = Field(unique=True, index=True)
     full_name: str = Field(default=None)
     joined_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
