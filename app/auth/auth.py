@@ -1,5 +1,4 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError

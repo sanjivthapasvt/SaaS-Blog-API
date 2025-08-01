@@ -1,6 +1,6 @@
 import os
 from urllib.parse import urlencode
-import requests
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
@@ -53,13 +53,13 @@ async def auth_google(code: str, session: Session = Depends(get_session)):
             "redirect_uri": GOOGLE_REDIRECT_URI,
             "grant_type": "authorization_code",
         }
-        response = requests.post(token_url, data=data)
+        response = httpx.post(token_url, data=data)
         response.raise_for_status()
 
         data = response.json()
         access_token = data["access_token"]
         
-        user_info_resp = requests.get(
+        user_info_resp = httpx.get(
             "https://www.googleapis.com/oauth2/v1/userinfo",
             headers={"Authorization": f"Bearer {access_token}"})
         user_info_resp.raise_for_status()
