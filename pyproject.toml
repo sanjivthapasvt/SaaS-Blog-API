@@ -6,11 +6,11 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.116.1",
+    "httpx>=0.28.1",
     "passlib[bcrypt]>=1.7.4",
     "pyjwt>=2.10.1",
     "python-dotenv>=1.1.1",
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.20",
-    "requests>=2.32.4",
     "sqlmodel>=0.0.24",
 ]
