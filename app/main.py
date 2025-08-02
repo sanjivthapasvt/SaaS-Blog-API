@@ -25,6 +25,7 @@ app = FastAPI(lifespan=lifespan)
 origins = [
     "http://localhost:8000",
     "http://localhost:3000",
+    "http://localhost:5173"
 ]
 
 app.add_middleware(
@@ -43,7 +44,3 @@ app.include_router(google_auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(blog_router, prefix="/blog", tags=["Blog"])
 app.include_router(comment_router, prefix="/comment", tags=["Comments"])
 app.include_router(users_router, prefix="/user", tags=["Users"])
-
-@app.get("/")
-def home():
-    return {"message": "Welcome to SaaS-blog-API"}
