@@ -3,12 +3,12 @@ from fastapi import APIRouter, Depends, UploadFile, Form
 from users.models import User
 from core.database import get_session
 from sqlmodel import Session, select
-from blogs.models import Blog
+from blogs.models import Blog, Tag, BlogTagLink
 from blogs.schema import BlogRead
 from blogs.utils import save_thumbnail
 from auth.auth import get_current_user
 from fastapi.exceptions import HTTPException
-
+from sqlalchemy.orm import selectinload
 
 router = APIRouter()
 
@@ -17,6 +17,7 @@ router = APIRouter()
 async def create_blog_post(
     title: str = Form(...),
     content: str = Form(...),
+    tags: str | None = Form(None),
     thumbnail: UploadFile | None = None,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
@@ -26,6 +27,7 @@ async def create_blog_post(
         Require multipart/formdata input
     """
     try:
+
         thumbnail_url = save_thumbnail(thumbnail)
         
         new_blog = Blog(
@@ -33,13 +35,26 @@ async def create_blog_post(
             content=content,
             thumbnail_url=thumbnail_url, 
             uploaded_by=current_user.id
-            ) 
+        ) 
         
         session.add(new_blog)
         session.commit()
         session.refresh(new_blog)
         title = new_blog.title
-        
+
+        if tags:
+            tag_list = [t.strip() for t in tags.split("#") if t.strip()]
+            for tag in tag_list:
+                current_tag = session.exec(select(Tag).where(Tag.title == tag)).first()
+                if not current_tag:
+                    current_tag = Tag(title=tag)
+                    session.add(current_tag)
+                    session.commit()
+                    session.refresh(current_tag)
+                new_link = BlogTagLink(blog_id=new_blog.id, tag_id=current_tag.id)
+                session.add(new_link)
+                session.commit()
+
         return {"title": title, "detail": "Successfully created the blog"}
 
     except HTTPException:
@@ -123,13 +138,24 @@ async def get_all_blog(session: Session = Depends(get_session)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
-@router.get("/mine", response_model=List[BlogRead])
+@router.get("/mine", response_model = list[BlogRead])
 async def get_current_user_blog(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
     try:
-        blogs = session.exec(select(Blog).where(Blog.uploaded_by == current_user.id)).all()
-        return blogs
+        blogs = session.exec(select(Blog).where(Blog.uploaded_by == current_user.id).options(selectinload(Blog.tags))).all() # type: ignore
+        result = [{
+            "id": blog.id,
+            "title": blog.title,
+            "content": blog.content,
+            "thumbnail_url": blog.thumbnail_url,
+            "uploaded_by": blog.uploaded_by,
+            "created_at": blog.created_at,
+            "tags": [tag.title for tag in blog.tags]
+        }for blog in blogs]
+
+        return result
+            
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{str(e)}")
