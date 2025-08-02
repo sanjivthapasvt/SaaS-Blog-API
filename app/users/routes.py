@@ -22,7 +22,7 @@ async def follow_user(
         target_user = session.get(User, user_id)
 
         if not target_user:
-            raise HTTPException(status_code=404, detail="User doesnot exist")
+            raise HTTPException(status_code=404, detail="User doesn't exist")
         if target_user.id == current_user.id:
             raise HTTPException(status_code=400, detail="Cannot follow yourself")
         
