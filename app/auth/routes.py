@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Form
 from sqlmodel import Session, select
 from core.database import get_session
 from users.models import User
-from auth.schemas import UserCreate, Token
+from auth.schemas import UserCreate, Token, UserLogin
 from auth.utils import hash_password, verify_password
 from auth.auth import create_access_token
 from typing import Optional
@@ -10,7 +10,7 @@ from typing import Optional
 router = APIRouter()
 
 @router.post("/register", response_model=Token)
-def register(user_data: UserCreate, session: Session = Depends(get_session)):
+def register(user_data: UserCreate , session: Session = Depends(get_session)):
     try:
         user: Optional[User] = session.exec(select(User).where(User.username == user_data.username)).first()
         email = session.exec(select(User).where(User.email == user_data.email)).first()
@@ -41,11 +41,11 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 @router.post("/login", response_model=Token)
-def login(username: str = Form(...), password:str = Form(...), session: Session = Depends(get_session)):
+def login(user_data: UserLogin, session: Session = Depends(get_session)):
     try:
-        user = session.exec(select(User).where(User.username == username)).first()
+        user = session.exec(select(User).where(User.username == user_data.username)).first()
         
-        if not user or not verify_password(password, user.hashed_password): # type: ignore
+        if not user or not verify_password(user_data.password, user.hashed_password): # type: ignore
             raise HTTPException(status_code=400, detail="Incorrect username or password")
 
         token = create_access_token({"sub": user.username})

@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
 from users.models import User, UserFollowLink
 from core.database import Session, get_session
@@ -7,7 +7,7 @@ from auth.auth import get_current_user
 from sqlmodel import select
 from users.schema import UserRead
 from auth.utils import hash_password, verify_password
-
+from schema.schema import PaginatedResponse
 
 router = APIRouter()
 
@@ -40,7 +40,7 @@ async def follow_user(
         session.add(newlink)
         session.commit()
 
-        return {"message": f"You are now following {target_user.username}"}
+        return {"message": f"You are now following {target_user.full_name}"}
     
     except HTTPException:
         raise
@@ -75,7 +75,7 @@ async def unfollow_user(
         session.delete(link)
         session.commit()
 
-        return {"message": f"You have succesfully unfollowed {target_user.username}"}
+        return {"message": f"You have succesfully unfollowed {target_user.full_name}"}
 
     except HTTPException:
         raise
@@ -116,13 +116,16 @@ def change_password(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Something went wrong {str(e)}")
 
+
 @router.get("/list", response_model=List[UserRead])
 async def list_all_users(
+    limit:int = Query(15, ge=1),
+    offset:int = Query(0, ge=0),
     session: Session = Depends(get_session),
     current_user:User = Depends(get_current_user)
 ):
     try:
-        users = session.exec(select(User.id, User.full_name).where(User.id != current_user.id)).all()
+        users = session.exec(select(User.id, User.full_name).limit(limit).offset(offset).where(User.id != current_user.id)).all()
  
         return users
     
@@ -136,12 +139,14 @@ async def list_all_users(
 
 @router.get("/list/followers", response_model=List[UserRead])
 async def list_followers(
+    limit: int = Query(15, ge=1),
+    offset: int = Query(0, ge=0),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
     try:
         raw_followers = session.exec(
-            select(UserFollowLink.follower_id).where(UserFollowLink.following_id == current_user.id)
+            select(UserFollowLink.follower_id).limit(limit).offset(offset).where(UserFollowLink.following_id == current_user.id)
         ).all()
 
         followers = session.exec(
@@ -159,6 +164,8 @@ async def list_followers(
 
 @router.get("/list/followings", response_model=List[UserRead])
 async def list_followings(
+    limit: int = Query(15, ge=1),
+    offset: int = Query(0, ge=0),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
@@ -166,7 +173,7 @@ async def list_followings(
     followings = []
     try:  
         raw_followings = session.exec(
-            select(UserFollowLink.following_id).where(UserFollowLink.follower_id == current_user.id)
+            select(UserFollowLink.following_id).limit(limit).offset(offset).where(UserFollowLink.follower_id == current_user.id)
             ).all()
         
         if raw_followings:
@@ -175,6 +182,7 @@ async def list_followings(
                 ).all()
             
         return followings
+    
     except HTTPException:
         raise
 

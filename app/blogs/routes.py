@@ -1,10 +1,11 @@
 from typing import List
-from fastapi import APIRouter, Depends, UploadFile, Form
+from fastapi import APIRouter, Depends, Query, UploadFile, Form
 from users.models import User
 from core.database import get_session
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 from blogs.models import Blog, Tag, BlogTagLink
-from blogs.schema import BlogRead
+from blogs.schema import BlogResponse
+from schema.schema import PaginatedResponse
 from blogs.utils import save_thumbnail
 from auth.auth import get_current_user
 from fastapi.exceptions import HTTPException
@@ -93,6 +94,7 @@ async def update_blog_post(
         
         session.add(blog_post)
         session.commit()
+
         return {"detail": "Successfully updated blog contents"}
         
     except HTTPException:
@@ -130,21 +132,17 @@ async def delete_blog_post(
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 
-@router.get("/all", response_model=List[BlogRead])
-async def get_all_blog(session: Session = Depends(get_session)):
-    try:
-        blogs = session.exec(select(Blog)).all()
-        return blogs
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}")
-
-@router.get("/mine", response_model = list[BlogRead])
-async def get_current_user_blog(
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+@router.get("/all", response_model=PaginatedResponse[BlogResponse])
+async def get_all_blog(
+    limit:int = Query(10, ge=1),
+    offset:int = Query(0, ge=0), 
+    session: Session = Depends(get_session)
 ):
     try:
-        blogs = session.exec(select(Blog).where(Blog.uploaded_by == current_user.id).options(selectinload(Blog.tags))).all() # type: ignore
+        blogs = session.exec(select(Blog).offset(offset).limit(limit)).all()
+
+        total = session.exec(select(func.count()).select_from(Blog)).one()
+        
         result = [{
             "id": blog.id,
             "title": blog.title,
@@ -155,7 +153,44 @@ async def get_current_user_blog(
             "tags": [tag.title for tag in blog.tags]
         }for blog in blogs]
 
-        return result
+        return {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "data": result,
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{str(e)}")
+
+@router.get("/mine", response_model = PaginatedResponse[BlogResponse])
+async def get_current_user_blog(
+    limit:int = Query(10, ge=1),
+    offset:int = Query(0, ge=0),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        total = session.exec(select(func.count()).select_from(Blog).where(Blog.uploaded_by == current_user.id)).one()
+        
+        blogs = session.exec(select(Blog).where(Blog.uploaded_by == current_user.id).options(selectinload(Blog.tags))).all() # type: ignore
+        
+        result = [{
+            "id": blog.id,
+            "title": blog.title,
+            "content": blog.content,
+            "thumbnail_url": blog.thumbnail_url,
+            "uploaded_by": blog.uploaded_by,
+            "created_at": blog.created_at,
+            "tags": [tag.title for tag in blog.tags]
+        }for blog in blogs]
+
+        return {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "data": result,
+        }
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{str(e)}")

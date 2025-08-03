@@ -26,8 +26,8 @@ async def create_comment(
         new_comment = Comment(
             blog_id=blog_id,
             content=content, 
-            commmented_by=current_user.id,
-        ) 
+            commented_by=current_user.id,
+        )
         
         session.add(new_comment)
         session.commit()
@@ -71,7 +71,7 @@ async def update_comment(
         
         if not comment:
             raise HTTPException(status_code=404, detail="Comment not found")
-        if comment.commmented_by != current_user.id:
+        if comment.commented_by != current_user.id:
             raise HTTPException(status_code=401, detail="You are not the owner of the comment")
 
         comment.content = content
@@ -100,7 +100,7 @@ async def delete_comment(
 
         if not comment:
             raise HTTPException(status_code=404, detail="Comment not found")
-        if comment.commmented_by != current_user.id:
+        if comment.commented_by != current_user.id:
             raise HTTPException(status_code=401, detail="You are not the owner of the comment")
         
         session.delete(comment)
