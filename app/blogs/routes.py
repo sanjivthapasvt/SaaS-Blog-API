@@ -35,7 +35,7 @@ async def create_blog_post(
             title=title,
             content=content,
             thumbnail_url=thumbnail_url, 
-            uploaded_by=current_user.id
+            author=current_user.id
         ) 
         
         session.add(new_blog)
@@ -80,7 +80,7 @@ async def update_blog_post(
         if not blog_post:
             raise HTTPException(status_code=404, detail="Blog not found")
         
-        if blog_post.uploaded_by != current_user.id:
+        if blog_post.author != current_user.id:
             raise HTTPException(status_code=401, detail="You are not the owner of the blog")
         
         thumbnail_url = save_thumbnail(thumbnail)
@@ -115,7 +115,7 @@ async def delete_blog_post(
         if not blog:
             raise HTTPException(status_code=404, detail="Blog post not found")
         
-        if blog.uploaded_by != current_user.id:
+        if blog.author != current_user.id:
             raise HTTPException(status_code=401, detail="You are not the owner of the blog")
 
         title = blog.title
@@ -134,21 +134,31 @@ async def delete_blog_post(
 
 @router.get("/all", response_model=PaginatedResponse[BlogResponse])
 async def get_all_blog(
-    limit:int = Query(10, ge=1),
-    offset:int = Query(0, ge=0), 
+    search: str = Query(default=None),
+    limit :int = Query(10, ge=1),
+    offset: int = Query(0, ge=0), 
     session: Session = Depends(get_session)
 ):
     try:
-        blogs = session.exec(select(Blog).offset(offset).limit(limit)).all()
+        query = select(Blog).offset(offset).limit(limit)
+        total_query = select(func.count()).select_from(Blog)
+        
+        if search:
+            search_term = f"%{search.lower()}%"
+            condition = func.lower(Blog.title).like(search_term)
+            query = query.where(condition)
+            total_query = total_query.where(condition)
 
-        total = session.exec(select(func.count()).select_from(Blog)).one()
+        blogs = session.exec(query).all()
+
+        total = session.exec(total_query).one()
         
         result = [{
             "id": blog.id,
             "title": blog.title,
             "content": blog.content,
             "thumbnail_url": blog.thumbnail_url,
-            "uploaded_by": blog.uploaded_by,
+            "author": blog.author,
             "created_at": blog.created_at,
             "tags": [tag.title for tag in blog.tags]
         }for blog in blogs]
@@ -165,22 +175,33 @@ async def get_all_blog(
 
 @router.get("/mine", response_model = PaginatedResponse[BlogResponse])
 async def get_current_user_blog(
+    search: str = Query(default=None),
     limit:int = Query(10, ge=1),
     offset:int = Query(0, ge=0),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
     try:
-        total = session.exec(select(func.count()).select_from(Blog).where(Blog.uploaded_by == current_user.id)).one()
+        query = select(Blog).offset(offset).limit(limit).where(Blog.author == current_user.id)
+        total_query = select(func.count()).select_from(Blog).where(Blog.author == current_user.id)
         
-        blogs = session.exec(select(Blog).where(Blog.uploaded_by == current_user.id).options(selectinload(Blog.tags))).all() # type: ignore
-        
+        if search:
+            search_term = f"%{search.lower()}%"
+            condition = func.lower(Blog.title).like(search_term)
+
+            query = query.where(condition)
+            total_query = total_query.where(condition)
+
+        blogs = session.exec(query).all()
+
+        total = session.exec(total_query).one()
+                        
         result = [{
             "id": blog.id,
             "title": blog.title,
             "content": blog.content,
             "thumbnail_url": blog.thumbnail_url,
-            "uploaded_by": blog.uploaded_by,
+            "author": blog.author,
             "created_at": blog.created_at,
             "tags": [tag.title for tag in blog.tags]
         }for blog in blogs]

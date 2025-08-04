@@ -6,7 +6,7 @@ class BlogResponse(BaseModel):
     title: str
     thumbnail_url: str | None
     content: str
-    uploaded_by: int
+    author: int
     tags: list[str]
     created_at: datetime
     
