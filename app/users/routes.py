@@ -1,6 +1,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, Query
 from fastapi.exceptions import HTTPException
+from sqlalchemy import func
 from users.models import User, UserFollowLink
 from core.database import Session, get_session
 from auth.auth import get_current_user
@@ -119,13 +120,20 @@ def change_password(
 
 @router.get("/list", response_model=List[UserRead])
 async def list_all_users(
-    limit:int = Query(15, ge=1),
-    offset:int = Query(0, ge=0),
+    search: str = Query(default=None),
+    limit: int = Query(15, ge=1),
+    offset: int = Query(0, ge=0),
     session: Session = Depends(get_session),
     current_user:User = Depends(get_current_user)
 ):
     try:
-        users = session.exec(select(User.id, User.full_name).limit(limit).offset(offset).where(User.id != current_user.id)).all()
+        query = select(User.id, User.full_name).limit(limit).offset(offset).where(User.id != current_user.id)
+        if search:
+            search_term = f"%{search.lower()}%"
+            condition = func.lower(User.full_name).like(search_term)
+            query = query.where(condition)
+        
+        users = session.exec(query).all()
  
         return users
     
@@ -139,6 +147,7 @@ async def list_all_users(
 
 @router.get("/list/followers", response_model=List[UserRead])
 async def list_followers(
+    search: str = Query(default=None),
     limit: int = Query(15, ge=1),
     offset: int = Query(0, ge=0),
     session: Session = Depends(get_session),
@@ -149,11 +158,17 @@ async def list_followers(
             select(UserFollowLink.follower_id).limit(limit).offset(offset).where(UserFollowLink.following_id == current_user.id)
         ).all()
 
-        followers = session.exec(
-            select(User).where(User.id.in_(raw_followers)) # type: ignore
-        ).all()
+        query = select(User).where(User.id.in_(raw_followers)) # type: ignore
         
+        if search:
+            search_term = f"%{search.lower()}%"
+            condition = func.lower(User.full_name).like(search_term)
+            query = query.where(condition)
+        
+        followers = session.exec(query).all()
+
         return followers
+    
     except HTTPException:
         raise
 
@@ -164,22 +179,25 @@ async def list_followers(
 
 @router.get("/list/followings", response_model=List[UserRead])
 async def list_followings(
+    search: str = Query(default=None),
     limit: int = Query(15, ge=1),
     offset: int = Query(0, ge=0),
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    raw_followings = []
-    followings = []
     try:  
         raw_followings = session.exec(
             select(UserFollowLink.following_id).limit(limit).offset(offset).where(UserFollowLink.follower_id == current_user.id)
             ).all()
         
-        if raw_followings:
-            followings = session.exec(
-                select(User).where(User.id.in_(raw_followings)) # type: ignore
-                ).all()
+        query = select(User).where(User.id.in_(raw_followings)) # type: ignore
+        
+        if search:
+            search_term = f"%{search.lower()}%"
+            condition = func.lower(User.full_name).like(search_term)
+            query = query.where(condition)
+        
+        followings = session.exec(query).all()
             
         return followings
     
