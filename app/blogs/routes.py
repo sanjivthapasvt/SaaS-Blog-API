@@ -6,6 +6,7 @@ from sqlmodel import Session, func, select
 from blogs.models import Blog, Tag, BlogTagLink
 from blogs.schema import BlogContentResponse, BlogResponse
 from models.schema import PaginatedResponse
+from models.blog_like_link import BlogLikeLink
 from utils.save_image import save_image
 from auth.auth import get_current_user
 from fastapi.exceptions import HTTPException
@@ -65,6 +66,32 @@ async def create_blog_post(
     except Exception as e:
         raise (HTTPException(status_code=500, detail=f"Something went wrong {str(e)}"))
 
+@router.post("/blog/{blog_id}/like")
+async def like_blog(
+    blog_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    try:
+        query = select(BlogLikeLink).where(BlogLikeLink.blog_id == blog_id and BlogLikeLink.user_id == current_user.id)
+        is_liked = session.exec(query).first()
+
+        if is_liked:
+            session.delete(is_liked)
+            session.commit()
+            return {"detail": "removed like from blog"}
+
+        new_link = BlogLikeLink(blog_id=blog_id, user_id=current_user.id)
+        session.add(new_link)
+        session.commit()
+        session.refresh(new_link)
+        return {"detail": "added like to blog"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Something went wrong while liking post {str(e)}")
+
 
 @router.get("/blog", response_model=PaginatedResponse[BlogResponse])
 async def get_all_blog(
@@ -75,6 +102,53 @@ async def get_all_blog(
 ):
     try:
         query = select(Blog).offset(offset).limit(limit)
+        total_query = select(func.count()).select_from(Blog)
+        
+        if search:
+            search_term = f"%{search.lower()}%"
+            condition = func.lower(Blog.title).like(search_term)
+            query = query.where(condition)
+            total_query = total_query.where(condition)
+
+        blogs = session.exec(query).all()
+
+        total = session.exec(total_query).one()
+        
+        result = [{
+            "id": blog.id,
+            "title": blog.title,
+            "content": blog.content,
+            "thumbnail_url": blog.thumbnail_url,
+            "author": blog.author,
+            "created_at": blog.created_at,
+            "tags": [tag.title for tag in blog.tags]
+        }for blog in blogs]
+
+        return {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "data": result,
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{str(e)}")
+
+
+@router.get("/blog/liked", response_model=PaginatedResponse[BlogResponse])
+async def get_liked_blog(
+    search: str = Query(default=None),
+    limit :int = Query(10, ge=1),
+    offset: int = Query(0, ge=0), 
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    try:
+        raw_blogs = session.exec(
+            select(BlogLikeLink.blog_id).limit(limit).offset(offset).where(BlogLikeLink.user_id == current_user.id)).all()
+        
+        query = select(Blog).where(Blog.id.in_(raw_blogs)) # type: ignore
+        
         total_query = select(func.count()).select_from(Blog)
         
         if search:

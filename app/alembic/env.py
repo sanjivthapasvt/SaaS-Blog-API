@@ -22,7 +22,7 @@ if config.config_file_name is not None:
 #imports 
 from blogs.models import Blog, BlogTagLink, Tag, Comment
 from users.models import User, UserFollowLink
-
+from models.blog_like_link import BlogLikeLink
 target_metadata = SQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,
