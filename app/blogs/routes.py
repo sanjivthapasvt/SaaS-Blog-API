@@ -6,12 +6,13 @@ from sqlmodel import Session, func, select
 from blogs.models import Blog, Tag, BlogTagLink
 from blogs.schema import BlogResponse
 from schema.schema import PaginatedResponse
-from blogs.utils import save_thumbnail
+from utils.save_image import save_image
 from auth.auth import get_current_user
 from fastapi.exceptions import HTTPException
-from sqlalchemy.orm import selectinload
 
 router = APIRouter()
+
+thumbnail_path: str = "blogs/thumbnail"
 
 
 @router.post("/create")
@@ -29,7 +30,7 @@ async def create_blog_post(
     """
     try:
 
-        thumbnail_url = save_thumbnail(thumbnail)
+        thumbnail_url = save_image(thumbnail, thumbnail_path)
         
         new_blog = Blog(
             title=title,
@@ -83,7 +84,7 @@ async def update_blog_post(
         if blog_post.author != current_user.id:
             raise HTTPException(status_code=401, detail="You are not the owner of the blog")
         
-        thumbnail_url = save_thumbnail(thumbnail)
+        thumbnail_url = save_image(thumbnail, thumbnail_path)
         
         if title:
             blog_post.title = title
