@@ -12,7 +12,7 @@ from datetime import timezone, datetime
 router = APIRouter()
 
 
-@router.post("/create/{blog_id}")
+@router.post("/blog/{blog_id}/comment/")
 async def create_comment(
     blog_id: int,
     content: str,
@@ -42,7 +42,7 @@ async def create_comment(
 
 
 
-@router.get("/read/{blog_id}", response_model=List[CommentData])
+@router.get("/blog/{blog_id}/comment/", response_model=List[CommentData])
 async def read_comment(blog_id:int, session: Session = Depends(get_session)):
     
     try:
@@ -59,7 +59,7 @@ async def read_comment(blog_id:int, session: Session = Depends(get_session)):
         raise HTTPException(status_code=500, detail=f"Something went wrong {str(e)}")
 
 
-@router.patch("/update/{comment_id}")
+@router.patch("/comment/{comment_id}")
 async def update_comment(
     comment_id: int,
     content: str,
@@ -89,7 +89,7 @@ async def update_comment(
         raise HTTPException(status_code=500, detail=f"Something went wrong{str(e)}")
 
 
-@router.delete("/delete/{comment_id}")
+@router.delete("/comment/{comment_id}")
 async def delete_comment(
     comment_id: int,
     session: Session = Depends(get_session),
