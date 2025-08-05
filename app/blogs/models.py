@@ -1,10 +1,15 @@
 from sqlmodel import Relationship, SQLModel, Field
 from datetime import timezone, datetime
+from models.blog_like_link import BlogLikeLink
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from users.models import User
 
 class BlogTagLink(SQLModel, table=True):
     blog_id: int | None = Field(default=None, foreign_key="blog.id", primary_key=True)
     tag_id: int | None = Field(default=None, foreign_key="tag.id", primary_key=True)
+
 
 class Blog(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -14,6 +19,8 @@ class Blog(SQLModel, table=True):
     author : int | None = Field(default=None, foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
+    likes: list["User"] = Relationship(back_populates="liked_blogs", link_model=BlogLikeLink)
+
     comments: list["Comment"] = Relationship(back_populates="blog")
     
     tags: list["Tag"] = Relationship(back_populates="blogs", link_model=BlogTagLink)
@@ -33,3 +40,9 @@ class Comment(SQLModel, table=True):
     
     blog_id: int | None = Field(default=None, foreign_key="blog.id")
     blog: Blog | None = Relationship(back_populates="comments")
+
+
+#to resolve string references for type checking
+Blog.model_rebuild()
+Comment.model_rebuild()
+Tag.model_rebuild()

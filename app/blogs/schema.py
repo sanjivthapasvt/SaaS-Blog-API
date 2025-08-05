@@ -5,11 +5,16 @@ class BlogResponse(BaseModel):
     id:int
     title: str
     thumbnail_url: str | None
-    content: str
     author: int
     tags: list[str]
     created_at: datetime
     
+class BlogContentResponse(BaseModel):
+    title: str
+    content: str
+    author: int
+    tags: list[str]
+    created_at: datetime
 
 class CommentData(BaseModel):
     blog_id: int
