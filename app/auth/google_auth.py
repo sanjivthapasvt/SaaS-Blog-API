@@ -91,20 +91,19 @@ async def auth_google(code: str, session: Session = Depends(get_session)):
         raise
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Something went wrong {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Something went wrong while authenticating {str(e)}")
+
 
 def check_user_exist(user_id: str, session: Session):
     return session.exec(select(User).where(User.google_id == user_id)).first()
 
 
-
-def create_new_user(user_id: str, name: str, email:str , session: Session):
+def create_new_user(user_id: str, name: str, email: str , session: Session):
     try:
-        
         user = User(username=None, google_id=user_id ,email=email, full_name=name, is_active=True)
         session.add(user)
         session.commit()
         session.refresh(user)
         return user
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Something went wrong {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Something went wrong while creating user {str(e)}")
