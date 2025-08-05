@@ -67,7 +67,7 @@ async def auth_google(code: str, session: Session = Depends(get_session)):
         id = user_info["id"]
         name = user_info["name"]
         email = user_info["email"]
-
+        picture = user_info["picture"]
         if not name or not email or not id:
             raise HTTPException(status_code=400, detail="Incomplete user info from Google")
         
@@ -81,7 +81,7 @@ async def auth_google(code: str, session: Session = Depends(get_session)):
                 session.refresh(existing_user)
                 user = existing_user
 
-            user = create_new_user(user_id=user_info["id"], name=user_info["name"], email=user_info["email"], session=session)
+            user = create_new_user(user_id=user_info["id"], name=user_info["name"], email=user_info["email"], profile_pic=picture, session=session)
 
         token = create_access_token({"sub": user.google_id})
 
@@ -98,9 +98,9 @@ def check_user_exist(user_id: str, session: Session):
     return session.exec(select(User).where(User.google_id == user_id)).first()
 
 
-def create_new_user(user_id: str, name: str, email: str , session: Session):
+def create_new_user(user_id: str, name: str, email: str, profile_pic: str, session: Session):
     try:
-        user = User(username=None, google_id=user_id ,email=email, full_name=name, is_active=True)
+        user = User(username=None, google_id=user_id ,email=email, full_name=name, profile_pic=profile_pic, is_active=True)
         session.add(user)
         session.commit()
         session.refresh(user)

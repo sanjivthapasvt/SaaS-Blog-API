@@ -36,7 +36,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_
         sub = decode_access_token(token)
         
         if not sub:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing sub")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token or Token has been expired")
         
         user = session.exec(select(User).where(User.username == sub)).first()
 
