@@ -1,6 +1,10 @@
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import timezone, datetime
-from typing import List
+from typing import List, TYPE_CHECKING
+from models.blog_like_link import BlogLikeLink
+
+if TYPE_CHECKING:
+    from blogs.models import Blog
 
 class UserFollowLink(SQLModel, table=True):
     follower_id: int | None = Field(default=None,foreign_key="user.id" ,primary_key=True)
@@ -18,6 +22,8 @@ class User(SQLModel, table=True):
     joined_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     hashed_password: str| None = None
     is_active: bool = Field(default=True)
+
+    liked_blogs: list["Blog"] = Relationship(back_populates="likes", link_model=BlogLikeLink)
 
     followings: List["User"] = Relationship(
         back_populates="followers",
@@ -38,3 +44,5 @@ class User(SQLModel, table=True):
             "overlaps": "followings"
         }
     )
+
+User.model_rebuild()
