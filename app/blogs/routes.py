@@ -10,6 +10,8 @@ from models.blog_like_link import BlogLikeLink
 from utils.save_image import save_image
 from auth.auth import get_current_user
 from fastapi.exceptions import HTTPException
+from notifications.models import Notification, NotificationType
+from notifications.notification_service import create_notfication
 
 router = APIRouter()
 
@@ -37,7 +39,7 @@ async def create_blog_post(
             title=title,
             content=content,
             thumbnail_url=thumbnail_url, 
-            author=current_user.id
+            author=current_user.id  # type: ignore
         ) 
         
         session.add(new_blog)
@@ -73,6 +75,11 @@ async def like_blog(
     session: Session = Depends(get_session)
 ):
     try:
+        blog = session.exec(select(Blog).where(Blog.id == blog_id)).first()
+        
+        if not blog:
+            raise HTTPException(status_code=404, detail="Blog doesn't exist")
+        
         query = select(BlogLikeLink).where(BlogLikeLink.blog_id == blog_id and BlogLikeLink.user_id == current_user.id)
         is_liked = session.exec(query).first()
 
@@ -80,11 +87,19 @@ async def like_blog(
             session.delete(is_liked)
             session.commit()
             return {"detail": "removed like from blog"}
-
+        
         new_link = BlogLikeLink(blog_id=blog_id, user_id=current_user.id)
         session.add(new_link)
         session.commit()
         session.refresh(new_link)
+        
+        create_notfication(
+            session=session,
+            user_id = blog.author,
+            notification_type=NotificationType.LIKE,
+            message=f"{current_user.full_name} liked your blog {blog.title}"
+        )
+
         return {"detail": "added like to blog"}
 
     except HTTPException:

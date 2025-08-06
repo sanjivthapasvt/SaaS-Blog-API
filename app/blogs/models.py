@@ -16,7 +16,7 @@ class Blog(SQLModel, table=True):
     title: str = Field(index=True)
     thumbnail_url: str | None = Field(default=None)
     content: str
-    author : int | None = Field(default=None, foreign_key="user.id")
+    author : int = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     likes: list["User"] = Relationship(back_populates="liked_blogs", link_model=BlogLikeLink)
