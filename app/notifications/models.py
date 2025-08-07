@@ -11,6 +11,7 @@ class NotificationType(str, Enum):
 class Notification(SQLModel, table=True):
     id:int | None = Field(default=None, primary_key=True)
     user_id: int | None = Field(default=None, foreign_key="user.id")
+    blog_id: int | None = Field(default=None, foreign_key="blog.id")
     notification_type: NotificationType = Field(default=NotificationType.GENERAL, index=True)
     message: str = Field()
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)

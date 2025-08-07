@@ -92,13 +92,14 @@ async def like_blog(
         session.add(new_link)
         session.commit()
         session.refresh(new_link)
-        
-        create_notfication(
-            session=session,
-            user_id = blog.author,
-            notification_type=NotificationType.LIKE,
-            message=f"{current_user.full_name} liked your blog {blog.title}"
-        )
+        notification =  session.exec(select(Notification).where(Notification.user_id == current_user.id and Notification.blog_id == blog.id and Notification.notification_type == "like"))
+        if not notification:
+                create_notfication(
+                session=session,
+                user_id = blog.author,
+                notification_type=NotificationType.LIKE,
+                message=f"{current_user.full_name} liked your blog {blog.title}"
+            )
 
         return {"detail": "added like to blog"}
 
