@@ -3,12 +3,12 @@ from fastapi import HTTPException, UploadFile
 from sqlmodel import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from models.blog_like_link import BlogLikeLink
-from notifications.models import Notification, NotificationType
-from notifications.notification_service import create_notfication
-from users.schema import CurrentUserRead
-from blogs.models import BlogTagLink, Comment, Blog, Tag
-from utils.save_image import save_image
+from app.models.blog_like_link import BlogLikeLink
+from app.notifications.models import Notification, NotificationType
+from app.notifications.notification_service import create_notfication
+from app.users.schema import CurrentUserRead
+from app.blogs.models import BlogTagLink, Comment, Blog, Tag
+from app.utils.save_image import save_image
 
 async def create_new_blog(session: AsyncSession, title: str, thumbnail_url: str | None, content: str, author: int, tags: str | None) -> Blog:
     new_blog = Blog(title=title, thumbnail_url=thumbnail_url, content=content, author=author)

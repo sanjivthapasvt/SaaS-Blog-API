@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Field, Relationship
 from datetime import timezone, datetime
 from typing import List, TYPE_CHECKING
-from models.blog_like_link import BlogLikeLink
+from app.models.blog_like_link import BlogLikeLink
 
 if TYPE_CHECKING:
     from blogs.models import Blog

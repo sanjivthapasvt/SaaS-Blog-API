@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, Query, UploadFile, Form
-from users.schema import CurrentUserRead
-from core.database import get_session
-from sqlalchemy.ext.asyncio import AsyncSession
-from blogs.schema import BlogContentResponse, BlogResponse
-from models.schema import PaginatedResponse
-from utils.save_image import save_image
-from auth.auth import get_current_user
 from fastapi.exceptions import HTTPException
-from blogs.crud import (
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.users.schema import CurrentUserRead
+from app.core.database import get_session
+from app.blogs.schema import BlogContentResponse, BlogResponse
+from app.models.schema import PaginatedResponse
+from app.utils.save_image import save_image
+from app.auth.auth import get_current_user
+from app.blogs.crud import (
     get_blog_by_id, 
     create_new_blog, 
     like_unlike_blog, 

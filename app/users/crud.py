@@ -1,9 +1,9 @@
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, select
-from utils.save_image import save_image
-from auth.utils import verify_password, hash_password
-from users.models import User, UserFollowLink
+from app.utils.save_image import save_image
+from app.auth.utils import verify_password, hash_password
+from app.users.models import User, UserFollowLink
 
 
 profile_pic_path: str = "users/profile_pic"

@@ -1,14 +1,11 @@
 from typing import List
 from fastapi import APIRouter, Depends
-from users.models import User
-from core.database import get_session, AsyncSession
-from sqlmodel import select
-from blogs.models import Blog, Comment
-from blogs.schema import CommentData
-from auth.auth import get_current_user
 from fastapi.exceptions import HTTPException
-from datetime import timezone, datetime
-from blogs.crud import create_comment, read_comments, update_comment, delete_comment
+from app.users.models import User
+from app.core.database import get_session, AsyncSession
+from app.blogs.schema import CommentData
+from app.auth.auth import get_current_user
+from app.blogs.crud import create_comment, read_comments, update_comment, delete_comment
 
 router = APIRouter()
 

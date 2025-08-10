@@ -7,7 +7,7 @@ DATABASE_URL = os.getenv(
     "sqlite+aiosqlite:///database.db"  # for dev
 )
 
-engine = create_async_engine(DATABASE_URL, echo=True)
+engine = create_async_engine(DATABASE_URL, echo=False)
 
 
 AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(

@@ -1,11 +1,11 @@
 from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlmodel import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
-from core.database import get_session
-from users.models import User
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_session
+from app.users.models import User
 import os
 
 SECRET_KEY = os.getenv("SECRET_KEY") or "sanjivthapafastapisecretkey"

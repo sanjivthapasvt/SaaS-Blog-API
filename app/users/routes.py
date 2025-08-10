@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, Form, Query, UploadFile
 from fastapi.exceptions import HTTPException
-from users.models import User
-from core.database import AsyncSession, get_session
-from auth.auth import get_current_user
-from users.schema import CurrentUserRead, UserRead
-from models.schema import PaginatedResponse
-from users.crud import(
+from app.users.models import User
+from app.core.database import AsyncSession, get_session
+from app.auth.auth import get_current_user
+from app.users.schema import CurrentUserRead, UserRead
+from app.models.schema import PaginatedResponse
+from app.users.crud import(
     list_users, 
     list_followers, 
     list_followings, 

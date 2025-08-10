@@ -1,6 +1,6 @@
 from sqlmodel import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from notifications.models import Notification
+from app.notifications.models import Notification
 
 
 async def get_notifications(search: str | None, limit: int , offset: int, session: AsyncSession, current_user: int):

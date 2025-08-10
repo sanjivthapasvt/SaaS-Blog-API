@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from auth.auth import get_current_user
-from core.database import get_session
-from users.models import User
-from notifications.schema import NotificationResponse
-from models.schema import PaginatedResponse
-from notifications.crud import get_notifications
+from app.auth.auth import get_current_user
+from app.core.database import get_session
+from app.users.models import User
+from app.notifications.schema import NotificationResponse
+from app.models.schema import PaginatedResponse
+from app.notifications.crud import get_notifications
 
 
 router = APIRouter()

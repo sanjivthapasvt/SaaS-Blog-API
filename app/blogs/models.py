@@ -1,6 +1,6 @@
 from sqlmodel import Relationship, SQLModel, Field
 from datetime import timezone, datetime
-from models.blog_like_link import BlogLikeLink
+from app.models.blog_like_link import BlogLikeLink
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

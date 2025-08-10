@@ -1,16 +1,16 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from core.database import init_db
-from auth.routes import router as auth_router
-from auth.google_auth import router as google_auth_router
-from blogs.routes import router as blog_router
-from blogs.comment_routes import router as comment_router
-from notifications.routes import router as notification_router
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from users.routes import router as users_router
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.database import init_db
+from app.auth.routes import router as auth_router
+from app.auth.google_auth import router as google_auth_router
+from app.blogs.routes import router as blog_router
+from app.blogs.comment_routes import router as comment_router
+from app.notifications.routes import router as notification_router
+from app.users.routes import router as users_router
 
 
 load_dotenv()

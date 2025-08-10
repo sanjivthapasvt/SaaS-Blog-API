@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from notifications.models import NotificationType, Notification
-from utils.logger import logger
+from app.notifications.models import NotificationType, Notification
+from app.utils.logger import logger
 
 async def create_notfication(
     user_id: int,

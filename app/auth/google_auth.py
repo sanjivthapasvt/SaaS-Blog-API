@@ -1,13 +1,13 @@
 import os
-from urllib.parse import urlencode
 import httpx
+from urllib.parse import urlencode
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlmodel import select
-from users.models import User
-from core.database import get_session
-from auth.auth import create_access_token
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.users.models import User
+from app.core.database import get_session
+from app.auth.auth import create_access_token
 
 router = APIRouter()
 
