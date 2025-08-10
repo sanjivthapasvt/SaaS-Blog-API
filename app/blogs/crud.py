@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import HTTPException, UploadFile
 from sqlmodel import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -245,7 +246,11 @@ async def delete_blog(blog_id:int, session: AsyncSession, current_user: int ):
     return title
 
 
-async def create_new_comment(session: AsyncSession, blog_id: int, content: str, commented_by: int) -> Comment:
+#####################
+####Comments CRUD####
+#####################
+
+async def create_comment(session: AsyncSession, blog_id: int, content: str, commented_by: int) -> Comment:
     new_comment = Comment(
         blog_id=blog_id,
         content=content, 
@@ -257,3 +262,41 @@ async def create_new_comment(session: AsyncSession, blog_id: int, content: str, 
     await session.refresh(new_comment)
 
     return new_comment
+
+async def read_comments(blog_id:int, session: AsyncSession):
+    if not (session.get(Blog, blog_id)):
+        raise HTTPException(status_code=404, detail="Blog not found")
+        
+    comments = await session.execute(select(Comment).where(Comment.blog_id == blog_id))
+
+    return comments.scalars().all()
+
+async def update_comment(comment_id: int, content: str, session: AsyncSession, current_user: int):
+    raw_comment = await session.execute(select(Comment).where(Comment.id == comment_id))
+    comment = raw_comment.scalars().first()
+        
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    if comment.commented_by != current_user:
+        raise HTTPException(status_code=401, detail="You are not the owner of the comment")
+
+    comment.content = content
+    comment.last_modified = datetime.now(timezone.utc)
+    session.add(comment)
+    await session.commit()
+
+    return {"detail": "Successfully updated comment"}
+
+
+async def delete_comment(comment_id: int, session: AsyncSession, current_user: int):
+    raw_comment = await session.execute(select(Comment).where(Comment.id == comment_id))
+    comment = raw_comment.scalars().first()
+
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    if comment.commented_by != current_user:
+        raise HTTPException(status_code=401, detail="You are not the owner of the comment")
+        
+    await session.delete(comment)
+    await session.commit()
+    return {"detail": "Successfully deleted comment"}

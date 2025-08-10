@@ -152,6 +152,7 @@ async def update_blog_route(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Something went wrong{str(e)}")
+ 
         
 @router.delete("/blog/{blog_id}")
 async def delete_blog_route(
