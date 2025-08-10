@@ -8,7 +8,7 @@ from blogs.schema import CommentData
 from auth.auth import get_current_user
 from fastapi.exceptions import HTTPException
 from datetime import timezone, datetime
-
+from blogs.crud import create_new_comment
 router = APIRouter()
 
 
@@ -23,15 +23,7 @@ async def create_comment(
         Post method to create comment in blog needs to be authenticated to perform this action.
     """
     try:
-        new_comment = Comment(
-            blog_id=blog_id,
-            content=content, 
-            commented_by=current_user.id,
-        )
-        
-        session.add(new_comment)
-        session.commit()
-                
+        create_new_comment(session=session, blog_id=blog_id, content=content, commented_by=current_user.id)         # type: ignore
         return {"detail": "Successfully commented on the blog"}
 
     except HTTPException:

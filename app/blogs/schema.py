@@ -10,10 +10,10 @@ class BlogResponse(BaseModel):
     created_at: datetime
     
 class BlogContentResponse(BaseModel):
+    id: int
     title: str
     content: str
     author: int
-    tags: list[str]
     created_at: datetime
 
 class CommentData(BaseModel):
