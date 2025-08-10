@@ -1,0 +1,177 @@
+from fastapi import HTTPException, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import func, select
+from utils.save_image import save_image
+from auth.utils import verify_password, hash_password
+from users.models import User, UserFollowLink
+
+
+profile_pic_path: str = "users/profile_pic"
+
+
+async def get_user_info(session: AsyncSession, user_id: int):
+    query = select(User).where(User.id == user_id)
+    user_data = await session.execute(query)
+    user_data_result = user_data.scalars().first()
+
+    return user_data_result
+
+
+async def change_user_password(session: AsyncSession, current_user: User, current_password: str, new_password: str, again_new_password: str):
+    if current_user.hashed_password:
+        if not verify_password(current_password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Your old password doesn't match")
+
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password length must be greater than 6")
+
+    if new_password != again_new_password:
+        raise HTTPException(status_code=400, detail="New passwords doesn't match")
+        
+    hashed_new_password = hash_password(new_password)
+
+    current_user.hashed_password = hashed_new_password
+    session.add(current_user)
+    await session.commit()
+
+
+async def update_user_profile(
+    full_name: str | None,
+    profile_pic: UploadFile | None,
+    session: AsyncSession,
+    current_user: User,
+):
+    if not full_name or not profile_pic:
+        raise HTTPException(status_code=400, detail="Both fields cannot be empty. At least one field must be provided")
+        
+    if full_name:
+        current_user.full_name = full_name
+        
+    if profile_pic:
+        profile_pic_url = await save_image(profile_pic, profile_pic_path)
+        current_user.profile_pic = profile_pic_url
+
+    session.add(current_user)
+    await session.commit()
+    await session.refresh(current_user)
+
+
+async def list_users(search: str, limit: int , offset: int, session: AsyncSession):
+    query = select(User).limit(limit).offset(offset)
+    total_query = select(func.count()).select_from(User)
+
+    if search:
+        search_term = f"%{search.lower()}%"
+        condition = func.lower(User.full_name).like(search_term)
+        query = query.where(condition)
+        
+    total = await session.execute(total_query)
+    total_result = total.scalars().one()
+    users = await session.execute(query)
+    users_result = users.scalars().all()
+ 
+    return {
+        "total": total_result,
+        "limit": limit,
+        "offset": offset,
+        "data": users_result
+    }
+
+async def list_followers(user_id: int, search: str , limit: int, offset: int, session: AsyncSession):
+    raw_followers = await session.execute(
+        select(UserFollowLink.follower_id).limit(limit).offset(offset).where(UserFollowLink.following_id == user_id)
+    )
+    raw_followers_result = raw_followers.scalars().all()
+    query = select(User).where(User.id.in_(raw_followers_result)) # type: ignore
+
+    total_query = select(func.count()).select_from(UserFollowLink).where(UserFollowLink.following_id == user_id)
+        
+    if search:
+        search_term = f"%{search.lower()}%"
+        condition = func.lower(User.full_name).like(search_term)
+        query = query.where(condition)
+        
+        
+    total = await session.execute(total_query)
+    total_result = total.scalars().one()
+    followers = await session.execute(query)
+    followers_result = followers.scalars().all()
+
+    return {
+        "total": total_result,
+        "limit": limit,
+        "offset": offset,
+        "data": followers_result
+    }
+
+
+async def list_followings(user_id: int, search: str, limit: int, offset: int, session: AsyncSession):
+    raw_followings = await session.execute(
+        select(UserFollowLink.following_id).limit(limit).offset(offset).where(UserFollowLink.follower_id == user_id)
+        )
+    raw_followings_result = raw_followings.scalars().all()
+    query = select(User).where(User.id.in_(raw_followings_result)) # type: ignore
+    total_query = select(func.count()).select_from(UserFollowLink).where(UserFollowLink.follower_id == user_id)
+        
+    if search:
+        search_term = f"%{search.lower()}%"
+        condition = func.lower(User.full_name).like(search_term)
+        query = query.where(condition)
+        
+        
+    total = await session.execute(total_query)
+    total_result = total.scalars().one()
+    followings = await session.execute(query)
+    followings_result = followings.scalars().all()
+            
+    return {
+        "total": total_result,
+        "limit": limit,
+        "offset": offset,
+        "data": followings_result
+    }
+
+
+async def follow_user(user_id: int, session: AsyncSession, current_user: User) -> User:
+    target_user = await session.get(User, user_id)
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User doesn't exist")
+    if target_user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot follow yourself")
+        
+    #Check if the user is already following
+    link = session.execute(select(UserFollowLink).where(
+        UserFollowLink.follower_id == current_user.id,
+        UserFollowLink.following_id == target_user.id
+    ))
+
+    if link:
+        raise HTTPException(status_code=400, detail="Already following")
+        
+    newlink = UserFollowLink(follower_id=current_user.id, following_id=target_user.id)
+
+    session.add(newlink)
+    await session.commit()
+    return target_user
+
+async def unfollow_user(user_id: int, session: AsyncSession, current_user: User) -> User:
+    target_user = await session.get(User, user_id)
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User doesnot exist")
+    if target_user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot follow yourself")
+        
+    #Check if the user is following
+    link = session.execute(select(UserFollowLink).where(
+        UserFollowLink.follower_id == current_user.id,
+        UserFollowLink.following_id == target_user.id
+    ))
+
+    if not link:
+        raise HTTPException(status_code=400, detail="You have not followed the user")
+
+    await session.delete(link)
+    await session.commit()
+    return target_user
