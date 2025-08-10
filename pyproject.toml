@@ -5,11 +5,15 @@ description = "fastapi api for saas-blog site"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "aiofiles>=24.1.0",
+    "aiosqlite>=0.21.0",
     "alembic>=1.16.4",
+    "asyncpg>=0.30.0",
     "fastapi[standard]>=0.116.1",
     "httpx>=0.28.1",
     "passlib[bcrypt]>=1.7.4",
     "pyjwt>=2.10.1",
+    "pytest>=8.4.1",
     "python-dotenv>=1.1.1",
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.20",
