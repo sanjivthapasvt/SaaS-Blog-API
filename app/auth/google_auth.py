@@ -3,10 +3,11 @@ from urllib.parse import urlencode
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
-from sqlmodel import Session, select
+from sqlmodel import select
 from users.models import User
 from core.database import get_session
 from auth.auth import create_access_token
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -43,7 +44,7 @@ async def get_google_login_url():
 # In my case In google I have set GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 # The google returns access_token and we can use it to get user info including id, email, name and picture
 @router.get("/google/callback")
-async def auth_google(code: str, session: Session = Depends(get_session)):
+async def auth_google(code: str, session: AsyncSession = Depends(get_session)):
     try:
         token_url = "https://oauth2.googleapis.com/token"
         data = {
@@ -71,17 +72,18 @@ async def auth_google(code: str, session: Session = Depends(get_session)):
         if not name or not email or not id:
             raise HTTPException(status_code=400, detail="Incomplete user info from Google")
         
-        user = check_user_exist(user_id=id, session=session)
+        user = await check_user_exist(user_id=id, session=session)
 
         if not user:
-            existing_user = session.exec(select(User).where(email == User.email)).first()
+            existing_user_result = await session.execute(select(User).where(email == User.email))
+            existing_user = existing_user_result.scalars().first()
             if existing_user and not existing_user.google_id:
                 existing_user.google_id = id
-                session.commit()
-                session.refresh(existing_user)
+                await session.commit()
+                await session.refresh(existing_user)
                 user = existing_user
 
-            user = create_new_user(user_id=user_info["id"], name=user_info["name"], email=user_info["email"], profile_pic=picture, session=session)
+            user = await create_new_user(user_id=user_info["id"], name=user_info["name"], email=user_info["email"], profile_pic=picture, session=session)
 
         token = create_access_token({"sub": user.google_id})
 
@@ -94,16 +96,16 @@ async def auth_google(code: str, session: Session = Depends(get_session)):
         raise HTTPException(status_code=500, detail=f"Something went wrong while authenticating {str(e)}")
 
 
-def check_user_exist(user_id: str, session: Session):
-    return session.exec(select(User).where(User.google_id == user_id)).first()
+async def check_user_exist(user_id: str, session: AsyncSession):
+    user = await session.execute(select(User).where(User.google_id == user_id))
+    return user.scalars().first()
 
-
-def create_new_user(user_id: str, name: str, email: str, profile_pic: str, session: Session):
+async def create_new_user(user_id: str, name: str, email: str, profile_pic: str, session: AsyncSession):
     try:
         user = User(username=None, google_id=user_id ,email=email, full_name=name, profile_pic=profile_pic, is_active=True)
         session.add(user)
-        session.commit()
-        session.refresh(user)
+        await session.commit()
+        await session.refresh(user)
         return user
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Something went wrong while creating user {str(e)}")

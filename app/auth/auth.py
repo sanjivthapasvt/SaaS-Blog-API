@@ -1,11 +1,11 @@
 from fastapi import Depends, HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import select
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from core.database import get_session
 from users.models import User
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
+from sqlalchemy.ext.asyncio import AsyncSession
 import os
 
 SECRET_KEY = os.getenv("SECRET_KEY") or "sanjivthapafastapisecretkey"
@@ -30,7 +30,7 @@ def decode_access_token(token: str):
     except JWTError:
         return None
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme), session: Session = Depends(get_session)):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme), session: AsyncSession = Depends(get_session)):
     try:
         token = credentials.credentials
         sub = decode_access_token(token)
@@ -38,15 +38,17 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_
         if not sub:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token or Token has been expired")
         
-        user = session.exec(select(User).where(User.username == sub)).first()
+        user = await session.execute(select(User).where(User.username == sub))
+        user_result = user.scalars().first()
 
-        if not user:
-            user = session.exec(select(User).where(User.google_id == sub)).first()
+        if not user_result:
+            user = await session.execute(select(User).where(User.google_id == sub))
+            user_result = user.scalars().first()
         
-        if not user:
+        if not user_result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         
-        return user
+        return user_result
     
     except JWTError as e:
         raise HTTPException(status_code=401, detail=f"Invalid token: {str(e)}")
