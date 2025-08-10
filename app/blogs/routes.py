@@ -25,7 +25,7 @@ thumbnail_path: str = "blogs/thumbnail"
 
 
 @router.post("/blog")
-async def create_blog(
+async def create_blog_route(
     title: str = Form(...),
     content: str = Form(...),
     tags: str | None = Form(None),
@@ -55,7 +55,7 @@ async def create_blog(
         raise (HTTPException(status_code=500, detail=f"Something went wrong {str(e)}"))
 
 @router.post("/blog/{blog_id}/like")
-async def like_blog(
+async def like_blog_route(
     blog_id: int,
     current_user: CurrentUserRead = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
@@ -85,7 +85,7 @@ async def get_all_blogs_route(
 
 
 @router.get("/blog/liked", response_model=PaginatedResponse[BlogResponse])
-async def get_liked_blog_by_user(
+async def get_liked_blog_route(
     search: str = Query(default=None),
     limit :int = Query(10, ge=1),
     offset: int = Query(0, ge=0), 
@@ -101,7 +101,7 @@ async def get_liked_blog_by_user(
 
 
 @router.get("/blog/mine")
-async def get_mine_blog(
+async def get_mine_blog_route(
     search: str | None = Query(default=None),
     limit:int = Query(10, ge=1),
     offset:int = Query(0, ge=0),
@@ -119,7 +119,7 @@ async def get_mine_blog(
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 @router.get("/blog/{blog_id}", response_model=BlogContentResponse)
-async def get_specefic_blog(
+async def get_specefic_blog_route(
     blog_id: int, 
     session: AsyncSession = Depends(get_session)
 ):
@@ -152,8 +152,8 @@ async def update_blog_route(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Something went wrong{str(e)}")
- 
-        
+
+
 @router.delete("/blog/{blog_id}")
 async def delete_blog_route(
     blog_id:int,

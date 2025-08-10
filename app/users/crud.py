@@ -57,7 +57,7 @@ async def update_user_profile(
 
 
 async def list_users(search: str, limit: int , offset: int, session: AsyncSession):
-    query = select(User).limit(limit).offset(offset)
+    query = select(User)
     total_query = select(func.count()).select_from(User)
 
     if search:
@@ -65,7 +65,7 @@ async def list_users(search: str, limit: int , offset: int, session: AsyncSessio
         condition = func.lower(User.full_name).like(search_term)
         query = query.where(condition)
         
-    total = await session.execute(total_query)
+    total = await session.execute(total_query.limit(limit).offset(offset))
     total_result = total.scalars().one()
     users = await session.execute(query)
     users_result = users.scalars().all()
@@ -79,7 +79,7 @@ async def list_users(search: str, limit: int , offset: int, session: AsyncSessio
 
 async def list_followers(user_id: int, search: str , limit: int, offset: int, session: AsyncSession):
     raw_followers = await session.execute(
-        select(UserFollowLink.follower_id).limit(limit).offset(offset).where(UserFollowLink.following_id == user_id)
+        select(UserFollowLink.follower_id).where(UserFollowLink.following_id == user_id).limit(limit).offset(offset)
     )
     raw_followers_result = raw_followers.scalars().all()
     query = select(User).where(User.id.in_(raw_followers_result)) # type: ignore
@@ -107,7 +107,7 @@ async def list_followers(user_id: int, search: str , limit: int, offset: int, se
 
 async def list_followings(user_id: int, search: str, limit: int, offset: int, session: AsyncSession):
     raw_followings = await session.execute(
-        select(UserFollowLink.following_id).limit(limit).offset(offset).where(UserFollowLink.follower_id == user_id)
+        select(UserFollowLink.following_id).where(UserFollowLink.follower_id == user_id).limit(limit).offset(offset)
         )
     raw_followings_result = raw_followings.scalars().all()
     query = select(User).where(User.id.in_(raw_followings_result)) # type: ignore

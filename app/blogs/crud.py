@@ -113,8 +113,7 @@ async def get_all_blogs(session: AsyncSession, search: str | None, limit: int, o
     }
 
 async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
-    blog = await session.execute(select(Blog).where(Blog.id == blog_id))
-    return blog.scalars().first()
+    return await session.get(Blog, blog_id)
 
 
 async def get_liked_blogs(session: AsyncSession,search: str, limit: int, offset: int, user_id: int):
@@ -158,7 +157,7 @@ async def get_liked_blogs(session: AsyncSession,search: str, limit: int, offset:
 
 
 async def get_current_user_blog(session: AsyncSession, search: str | None , limit: int, offset: int, current_user: int):
-    query = select(Blog).offset(offset).limit(limit).where(Blog.author == current_user)
+    query = select(Blog).where(Blog.author == current_user)
     total_query = select(func.count()).select_from(Blog).where(Blog.author == current_user)
         
     if search:
@@ -168,7 +167,7 @@ async def get_current_user_blog(session: AsyncSession, search: str | None , limi
         query = query.where(condition)
         total_query = total_query.where(condition)
 
-    blogs = await session.execute(query.options(selectinload(Blog.tags))) # type: ignore
+    blogs = await session.execute(query.limit(limit).offset(offset).options(selectinload(Blog.tags))) # type: ignore
     blogs_result = blogs.scalars().all()
 
     total = await session.execute(total_query)
