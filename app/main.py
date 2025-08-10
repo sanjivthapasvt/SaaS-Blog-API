@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from core.database import create_db_and_tables
+from core.database import init_db
 from auth.routes import router as auth_router
 from auth.google_auth import router as google_auth_router
 from blogs.routes import router as blog_router
@@ -18,7 +18,7 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
+    await init_db()
     yield
 
 app = FastAPI(lifespan=lifespan)
