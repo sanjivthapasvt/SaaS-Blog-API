@@ -10,7 +10,7 @@ from app.blogs.crud import create_comment, read_comments, update_comment, delete
 router = APIRouter()
 
 
-@router.post("/blog/{blog_id}/comment/")
+@router.post("/blogs/{blog_id}/comments")
 async def create_comment_route(
     blog_id: int,
     content: str,
@@ -29,11 +29,11 @@ async def create_comment_route(
 
 
 
-@router.get("/blog/{blog_id}/comment/", response_model=List[CommentData])
+@router.get("/blogs/{blog_id}/comments")
 async def read_comments_route(blog_id:int, session: AsyncSession = Depends(get_session)):
     
     try:
-       await read_comments(session=session, blog_id=blog_id)
+       return await read_comments(session=session, blog_id=blog_id)
     except HTTPException:
         raise
 
@@ -41,7 +41,7 @@ async def read_comments_route(blog_id:int, session: AsyncSession = Depends(get_s
         raise HTTPException(status_code=500, detail=f"Something went wrong {str(e)}")
 
 
-@router.patch("/comment/{comment_id}")
+@router.patch("/comments/{comment_id}")
 async def update_comment_route(
     comment_id: int,
     content: str,
@@ -57,14 +57,14 @@ async def update_comment_route(
         raise HTTPException(status_code=500, detail=f"Something went wrong{str(e)}")
 
 
-@router.delete("/comment/{comment_id}")
+@router.delete("/comments/{comment_id}")
 async def delete_comment_route(
     comment_id: int,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
     try:
-        return await update_comment(comment_id=comment_id, content=content, session=session, current_user=current_user.id) # type: ignore
+        return await delete_comment(comment_id=comment_id, session=session, current_user=current_user.id) # type: ignore
     except HTTPException:
         raise
     except Exception as e:

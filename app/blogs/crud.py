@@ -83,10 +83,11 @@ async def like_unlike_blog(session: AsyncSession, blog_id: int, current_user: Cu
 
     existing_notification = notification.scalars().first()
 
-    if not existing_notification:
+    if not existing_notification and not current_user.id == blog.author:
         await create_notfication(
             session=session,
             user_id = blog.author,
+            blog_id = blog.id,
             notification_type=NotificationType.LIKE,
             message=f"{current_user.full_name} liked your blog {blog.title}"
         )
@@ -325,12 +326,12 @@ async def read_comments(blog_id:int, session: AsyncSession):
 
     Returns list of Comment instances.
     """
-    if not (session.get(Blog, blog_id)):
+    if not await  (session.get(Blog, blog_id)):
         raise HTTPException(status_code=404, detail="Blog not found")
         
     comments = await session.execute(select(Comment).where(Comment.blog_id == blog_id))
-
     return comments.scalars().all()
+
 
 async def update_comment(comment_id: int, content: str, session: AsyncSession, current_user: int):
     """
