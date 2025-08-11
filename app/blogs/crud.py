@@ -11,6 +11,13 @@ from app.blogs.models import BlogTagLink, Comment, Blog, Tag
 from app.utils.save_image import save_image
 
 async def create_new_blog(session: AsyncSession, title: str, thumbnail_url: str | None, content: str, author: int, tags: str | None) -> Blog:
+    """
+    Create a new blog post with optional tags.
+
+    Commits the blog and creates any new tags, linking them.
+
+    Returns the created Blog instance.
+    """
     new_blog = Blog(title=title, thumbnail_url=thumbnail_url, content=content, author=author)
     session.add(new_blog)
     await session.commit()
@@ -36,6 +43,13 @@ async def create_new_blog(session: AsyncSession, title: str, thumbnail_url: str 
 
 
 async def like_unlike_blog(session: AsyncSession, blog_id: int, current_user: CurrentUserRead):
+    """
+    Toggle like/unlike status for a blog by the current user.
+
+    Raises 404 if blog not found.
+
+    Returns dict with action result message.
+    """
     blog = await get_blog_by_id(session=session, blog_id=blog_id)
         
     if not blog:
@@ -80,6 +94,11 @@ async def like_unlike_blog(session: AsyncSession, blog_id: int, current_user: Cu
 
 
 async def get_all_blogs(session: AsyncSession, search: str | None, limit: int, offset: int):
+    """
+    Retrieve paginated list of blogs, optionally filtered by a search term in the title.
+
+    Returns a dict with total count, pagination info, and blog data.
+    """
     query = select(Blog)
     total_query = select(func.count()).select_from(Blog)
         
@@ -113,10 +132,24 @@ async def get_all_blogs(session: AsyncSession, search: str | None, limit: int, o
     }
 
 async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
-    return await session.get(Blog, blog_id)
+    """
+    Get a blog by ID.
 
+    Raises 404 if not found.
 
-async def get_liked_blogs(session: AsyncSession,search: str, limit: int, offset: int, user_id: int):
+    Returns Blog instance.
+    """
+    blog = await session.get(Blog, blog_id)
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog not found")    
+    return blog
+
+async def get_liked_blogs(session: AsyncSession, search: str, limit: int, offset: int, user_id: int):
+    """
+    Retrieve paginated blogs liked by a user, optionally filtered by a search term.
+
+    Returns a dict with total count, pagination info, and blog data.
+    """
     raw_blogs_result = await session.execute(
         select(BlogLikeLink.blog_id).where(BlogLikeLink.user_id == user_id).limit(limit).offset(offset)
     )
@@ -156,9 +189,14 @@ async def get_liked_blogs(session: AsyncSession,search: str, limit: int, offset:
     }
 
 
-async def get_current_user_blog(session: AsyncSession, search: str | None , limit: int, offset: int, current_user: int):
-    query = select(Blog).where(Blog.author == current_user)
-    total_query = select(func.count()).select_from(Blog).where(Blog.author == current_user)
+async def get_user_blogs(session: AsyncSession, search: str | None , limit: int, offset: int, user_id: int):
+    """
+    Retrieve paginated blogs authored by a specific user, optionally filtered by a search term.
+
+    Returns a dict with total count, pagination info, and blog data.
+    """
+    query = select(Blog).where(Blog.author == user_id)
+    total_query = select(func.count()).select_from(Blog).where(Blog.author == user_id)
         
     if search:
         search_term = f"%{search.lower()}%"
@@ -191,7 +229,6 @@ async def get_current_user_blog(session: AsyncSession, search: str | None , limi
     }
 
 
-
 async def update_blog(
     blog_id: int, 
     title: str | None , 
@@ -201,7 +238,13 @@ async def update_blog(
     current_user:int,
     thumbnail_path: str
 ):
-    
+    """
+    Update title, content, and/or thumbnail of a blog owned by the current user.
+
+    Raises 404 if blog not found, 401 if user is not the owner, and 400 if no update fields are provided.
+
+    Returns dict confirming success.
+    """
     blog = await get_blog_by_id(session=session, blog_id=blog_id)
 
     if not blog:
@@ -230,6 +273,13 @@ async def update_blog(
         
 
 async def delete_blog(blog_id:int, session: AsyncSession, current_user: int ):
+    """
+    Delete a blog post owned by the current user.
+
+    Raises 404 if blog not found, 401 if user is not the owner.
+
+    Returns the deleted blog's title.
+    """
     blog = await get_blog_by_id(session=session, blog_id=blog_id)
 
     if not blog:
@@ -250,6 +300,11 @@ async def delete_blog(blog_id:int, session: AsyncSession, current_user: int ):
 #####################
 
 async def create_comment(session: AsyncSession, blog_id: int, content: str, commented_by: int) -> Comment:
+    """
+    Create a comment on a blog post.
+
+    Returns the created Comment instance.
+    """
     new_comment = Comment(
         blog_id=blog_id,
         content=content, 
@@ -263,6 +318,13 @@ async def create_comment(session: AsyncSession, blog_id: int, content: str, comm
     return new_comment
 
 async def read_comments(blog_id:int, session: AsyncSession):
+    """
+    Retrieve all comments for a given blog.
+
+    Raises 404 if blog not found.
+
+    Returns list of Comment instances.
+    """
     if not (session.get(Blog, blog_id)):
         raise HTTPException(status_code=404, detail="Blog not found")
         
@@ -271,6 +333,13 @@ async def read_comments(blog_id:int, session: AsyncSession):
     return comments.scalars().all()
 
 async def update_comment(comment_id: int, content: str, session: AsyncSession, current_user: int):
+    """
+    Update content of a comment owned by the current user.
+
+    Raises 404 if comment not found, 401 if user is not the owner.
+
+    Returns dict confirming success.
+    """
     raw_comment = await session.execute(select(Comment).where(Comment.id == comment_id))
     comment = raw_comment.scalars().first()
         
@@ -288,6 +357,13 @@ async def update_comment(comment_id: int, content: str, session: AsyncSession, c
 
 
 async def delete_comment(comment_id: int, session: AsyncSession, current_user: int):
+    """
+    Delete a comment owned by the current user.
+
+    Raises 404 if comment not found, 401 if user is not the owner.
+
+    Returns dict confirming success.
+    """
     raw_comment = await session.execute(select(Comment).where(Comment.id == comment_id))
     comment = raw_comment.scalars().first()
 

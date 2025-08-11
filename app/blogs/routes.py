@@ -9,11 +9,10 @@ from app.utils.save_image import save_image
 from app.auth.auth import get_current_user
 from app.blogs.crud import (
     get_blog_by_id, 
-    create_new_blog, 
+    create_new_blog,
     like_unlike_blog, 
     get_all_blogs, 
     get_liked_blogs, 
-    get_current_user_blog, 
     update_blog, 
     delete_blog
 )
@@ -24,7 +23,7 @@ router = APIRouter()
 thumbnail_path: str = "blogs/thumbnail"
 
 
-@router.post("/blog")
+@router.post("/blogs")
 async def create_blog_route(
     title: str = Form(...),
     content: str = Form(...),
@@ -33,6 +32,7 @@ async def create_blog_route(
     session: AsyncSession = Depends(get_session),
     current_user: CurrentUserRead = Depends(get_current_user)
 ):
+    """Create a new blog post with optional tags and thumbnail."""
     try:
 
         thumbnail_url = await save_image(thumbnail, thumbnail_path)
@@ -54,12 +54,13 @@ async def create_blog_route(
     except Exception as e:
         raise (HTTPException(status_code=500, detail=f"Something went wrong {str(e)}"))
 
-@router.post("/blog/{blog_id}/like")
+@router.post("/blogs/{blog_id}/like")
 async def like_blog_route(
     blog_id: int,
     current_user: CurrentUserRead = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
+    """Toggle like status for a blog post."""
     try:
         return await like_unlike_blog(session=session, blog_id=blog_id, current_user=current_user)
     except HTTPException:
@@ -68,13 +69,14 @@ async def like_blog_route(
         raise HTTPException(status_code=500, detail=f"Something went wrong while liking post {str(e)}")
 
 
-@router.get("/blog")
+@router.get("/blogs", response_model=PaginatedResponse[BlogResponse])
 async def get_all_blogs_route(
     search: str = Query(default=None),
     limit :int = Query(10, ge=1),
     offset: int = Query(0, ge=0), 
     session: AsyncSession = Depends(get_session)
 ):
+    """Retrieve all blogs with optional search and pagination."""
     try:
         blogs = await get_all_blogs(session=session, search=search, limit=limit, offset=offset)
         return blogs
@@ -84,7 +86,7 @@ async def get_all_blogs_route(
         raise HTTPException(status_code=500, detail=f"Something went wrong while getting blogs {str(e)}")
 
 
-@router.get("/blog/liked", response_model=PaginatedResponse[BlogResponse])
+@router.get("/blogs/liked", response_model=PaginatedResponse[BlogResponse])
 async def get_liked_blog_route(
     search: str = Query(default=None),
     limit :int = Query(10, ge=1),
@@ -92,6 +94,7 @@ async def get_liked_blog_route(
     current_user: CurrentUserRead = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
+    """Retrieve blogs liked by the current user."""
     try:
         return await get_liked_blogs(session=session, search=search, limit=limit, offset=offset, user_id=current_user.id) # type: ignore
 
@@ -99,43 +102,23 @@ async def get_liked_blog_route(
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 
-
-@router.get("/blog/mine")
-async def get_mine_blog_route(
-    search: str | None = Query(default=None),
-    limit:int = Query(10, ge=1),
-    offset:int = Query(0, ge=0),
-    session: AsyncSession = Depends(get_session),
-    current_user: CurrentUserRead = Depends(get_current_user)
-):
-    try:
-
-        return await get_current_user_blog(session=session, search=search, limit=limit, offset=offset, current_user=current_user.id)
-    
-    except HTTPException:
-        raise
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}")
-
-@router.get("/blog/{blog_id}", response_model=BlogContentResponse)
+@router.get("/blogs/{blog_id}", response_model=BlogContentResponse)
 async def get_specefic_blog_route(
     blog_id: int, 
     session: AsyncSession = Depends(get_session)
 ):
+    """Retrieve a specific blog post by ID."""
     try:
-        blog = await get_blog_by_id(session=session, blog_id=blog_id)
-        
-        if not blog:
-            raise HTTPException(status_code=404, detail="Blog not found")
-        
-        return blog
+        return await get_blog_by_id(session=session, blog_id=blog_id)
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 
 
-@router.patch("/blog/{blogs_id}")
+@router.patch("/blogs/{blogs_id}")
 async def update_blog_route(
     blog_id: int,
     title: str | None = Form(None),
@@ -144,6 +127,7 @@ async def update_blog_route(
     session: AsyncSession =  Depends(get_session), 
     current_user: CurrentUserRead = Depends(get_current_user)
 ):
+    """Update a blog post's title, content, or thumbnail."""
     try:
         return await update_blog(session=session, blog_id=blog_id, title=title, content=content, thumbnail=thumbnail, current_user=current_user.id, thumbnail_path=thumbnail_path)
         
@@ -154,12 +138,13 @@ async def update_blog_route(
         raise HTTPException(status_code=500, detail=f"Something went wrong{str(e)}")
 
 
-@router.delete("/blog/{blog_id}")
+@router.delete("/blogs/{blog_id}")
 async def delete_blog_route(
     blog_id:int,
     session: AsyncSession =  Depends(get_session), 
     current_user:CurrentUserRead = Depends(get_current_user)
 ):
+    """Delete a blog post by ID."""
     try:
         title = await delete_blog(session=session, blog_id=blog_id, current_user=current_user.id)
         return {"title": title, "detail": "Successfully deleted blog"}
