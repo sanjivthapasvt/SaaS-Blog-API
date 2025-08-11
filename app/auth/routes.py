@@ -11,6 +11,25 @@ router = APIRouter()
 
 @router.post("/register", response_model=Token)
 async def register(user_data: UserCreate , session: AsyncSession = Depends(get_session)):
+    """
+    Register a new user and return an authentication token.
+
+    This endpoint validates the provided username, email, and password,
+    creates a new user in the database, and returns a JWT access token.
+
+    Args:
+        user_data (UserCreate): The user's registration details.
+        session (AsyncSession): The database session dependency.
+
+    Returns:
+        Token: A dictionary containing the access token and token type.
+
+    Raises:
+        HTTPException:
+            - 400: If the username or email already exists.
+            - 403: If the password length is less than 6 characters.
+            - 500: For unexpected server errors.
+    """
     try:
         user = await session.execute(select(User).where(User.username == user_data.username))
         user_result = user.scalars().first()
@@ -41,6 +60,25 @@ async def register(user_data: UserCreate , session: AsyncSession = Depends(get_s
 
 @router.post("/login", response_model=Token)
 async def login(user_data: UserLogin, session: AsyncSession = Depends(get_session)):
+    """
+    Login a existing user and return an authentication token.
+
+    This endpoint validates the provided username and password,
+    and returns a JWT access token.
+
+    Args:
+        user_data (UserLogin): The user's login details.
+        session (AsyncSession): The database session dependency.
+
+    Returns:
+        Token: A dictionary containing the access token and token type.
+
+    Raises:
+        HTTPException:
+            - 400: If the username or password is incorrect.
+            - 403: If the password length is less than 6 characters.
+            - 500: For unexpected server errors.
+    """
     try:
         user = await session.execute(select(User).where(User.username == user_data.username))
         user_result = user.scalars().first()

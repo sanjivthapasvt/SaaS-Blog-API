@@ -20,6 +20,20 @@ GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 #this get method redirects you to google login page
 @router.get("/google")
 async def get_google_login_url():
+    """
+    Redirects user to  google login .
+
+    This endpoint creates new url for google login using GOOGLE_SECRET_ID and
+    GOOGLE_CLIENT_SECRET and redirects user to that page
+
+    Args:
+
+    Returns:
+        REdirect: To google login page
+    Raises:
+        HTTPException:
+            - 500: For unexpected server errors.
+    """
     scopes = [
         "openid",
         "email",
@@ -45,6 +59,26 @@ async def get_google_login_url():
 # The google returns access_token and we can use it to get user info including id, email, name and picture
 @router.get("/google/callback")
 async def auth_google(code: str, session: AsyncSession = Depends(get_session)):
+    """
+    Register or Login user after user completes google login
+
+    This endpoint is called by google with their code and google 
+    sends access_token as response and we use that token to get user
+    info including google_id, email and name and validates if the user
+    already has account or not and creates if not and return access token in both cases
+
+    Args:
+        code (str): Google returns code after user successfully logs in on google auth.
+        session (AsyncSession): The database session dependency.
+
+    Returns:
+        Token: A dictionary containing the access token and token type.
+
+    Raises:
+        HTTPException:
+            - 400: If google send incoplete info.
+            - 500: For unexpected server errors.
+    """
     try:
         token_url = "https://oauth2.googleapis.com/token"
         data = {
@@ -72,7 +106,7 @@ async def auth_google(code: str, session: AsyncSession = Depends(get_session)):
         if not name or not email or not id:
             raise HTTPException(status_code=400, detail="Incomplete user info from Google")
         
-        user = await check_user_exist(user_id=id, session=session)
+        user = await check_user_exist(google_id=id, session=session)
 
         if not user:
             existing_user_result = await session.execute(select(User).where(email == User.email))
@@ -83,7 +117,7 @@ async def auth_google(code: str, session: AsyncSession = Depends(get_session)):
                 await session.refresh(existing_user)
                 user = existing_user
 
-            user = await create_new_user(user_id=user_info["id"], name=user_info["name"], email=user_info["email"], profile_pic=picture, session=session)
+            user = await create_new_user(google_id=user_info["id"], name=user_info["name"], email=user_info["email"], profile_pic=picture, session=session)
 
         token = create_access_token({"sub": user.google_id})
 
@@ -96,13 +130,43 @@ async def auth_google(code: str, session: AsyncSession = Depends(get_session)):
         raise HTTPException(status_code=500, detail=f"Something went wrong while authenticating {str(e)}")
 
 
-async def check_user_exist(user_id: str, session: AsyncSession):
-    user = await session.execute(select(User).where(User.google_id == user_id))
+
+async def check_user_exist(google_id: str, session: AsyncSession) -> User | None:
+    """
+    Dependency for auth_google to check if user already exist in database or not
+
+    Args:
+        google_id (str): The user's google_id.
+        session (AsyncSession): The database session dependency.
+
+    Returns:
+        User: If the user already exists  in database
+        None: If the user doesn't exist in database
+
+    """
+    user = await session.execute(select(User).where(User.google_id == google_id))
     return user.scalars().first()
 
-async def create_new_user(user_id: str, name: str, email: str, profile_pic: str, session: AsyncSession):
+
+async def create_new_user(google_id: str, name: str, email: str, profile_pic: str | None, session: AsyncSession) -> User:
+    """
+    Creates new user in database.
+
+    Args:
+        google_id (str): The user google_id.
+        name (str): The user full name
+        email(str): The user mail
+        profile_pic: The user google picture
+        session (AsyncSession): The database session dependency.
+
+    Returns:
+        User: Creates new user and return it
+    Raises:
+        HTTPException:
+            - 500: For unexpected server errors.
+    """
     try:
-        user = User(username=None, google_id=user_id ,email=email, full_name=name, profile_pic=profile_pic, is_active=True)
+        user = User(username=None, google_id=google_id ,email=email, full_name=name, profile_pic=profile_pic, is_active=True)
         session.add(user)
         await session.commit()
         await session.refresh(user)
