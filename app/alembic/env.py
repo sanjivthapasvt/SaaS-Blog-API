@@ -5,6 +5,10 @@ from sqlalchemy import pool
 
 from alembic import context
 
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -20,9 +24,10 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 #imports 
-from blogs.models import Blog, BlogTagLink, Tag, Comment
-from users.models import User, UserFollowLink
-from models.blog_like_link import BlogLikeLink
+from app.blogs.models import Blog, BlogTagLink, Tag, Comment
+from app.users.models import User, UserFollowLink
+from app.models.blog_like_link import BlogLikeLink
+from app.notifications.models import Notification
 target_metadata = SQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,
