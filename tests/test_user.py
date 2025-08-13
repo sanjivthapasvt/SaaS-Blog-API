@@ -1,88 +1,64 @@
 import pytest
-from httpx import AsyncClient
 
-BASE_URL = "http://127.0.0.1:8000"
-
-
-#test for user registeration and login
-@pytest.mark.asyncio
-async def test_register_and_login():
-    async with AsyncClient(base_url=BASE_URL) as ac:
-        reg_data = {
-            "username": "testuser1",
-            "first_name": "Test",
-            "last_name": "User",
-            "email": "testuser1@example.com",
-            "password": "strongpassword123"
-        }
-        response = await ac.post("/auth/register", json=reg_data)
-
-    assert response.status_code == 200, response.text
-    token_data = response.json()
-    assert isinstance(token_data.get("access_token"), str)
-    assert isinstance(token_data.get("token_type"), str)
-
-    # login with same user
-    async with AsyncClient(base_url=BASE_URL) as ac:
-        login_data = {
-            "username": reg_data["username"],
-            "password": reg_data["password"]
-        }
-        response = await ac.post("/auth/login", json=login_data)
-
-    assert response.status_code == 200, response.text
-    token_data = response.json()
-    assert isinstance(token_data.get("access_token"), str)
-    assert isinstance(token_data.get("token_type"), str)
 
 @pytest.mark.asyncio
-async def test_register_existing_username():
-    # registering again with same username
-    async with AsyncClient(base_url=BASE_URL) as ac:
-        reg_data = {
-            "username": "testuser1",  # already exists
-            "first_name": "Another",
-            "last_name": "User",
-            "email": "anotheremail@example.com",
-            "password": "strongpassword123"
-        }
-        response = await ac.post("/auth/register", json=reg_data)
+async def test_register_and_login_flow(client):
+    register_payload = {
+        "username": "testuser",
+        "first_name": "test",
+        "last_name": "user",
+        "email": "testuser@example.com",
+        "password": "secret123",
+    }
 
-    assert response.status_code == 400, response.text
+    resp = await client.post("/auth/register", json=register_payload)
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert set(data.keys()) == {"access_token", "token_type"}
+    assert data["token_type"] == "bearer"
 
-@pytest.mark.asyncio
-async def test_register_existing_email():
-    # try registering again with same email
-    async with AsyncClient(base_url=BASE_URL) as ac:
-        reg_data = {
-            "username": "uniqueusername",
-            "first_name": "Another",
-            "last_name": "User",
-            "email": "testuser1@example.com",  # already used
-            "password": "strongpassword123"
-        }
-        response = await ac.post("/auth/register", json=reg_data)
-
-    assert response.status_code == 400, response.text
+    login_payload = {"username": "testuser", "password": "secret123"}
+    resp = await client.post("/auth/login", json=login_payload)
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert set(data.keys()) == {"access_token", "token_type"}
+    assert data["token_type"] == "bearer"
 
 @pytest.mark.asyncio
-async def test_login_wrong_username():
-    async with AsyncClient(base_url=BASE_URL) as ac:
-        login_data = {
-            "username": "nonexistentuser",
-            "password": "strongpassword123"
-        }
-        response = await ac.post("/auth/login", json=login_data)
+async def test_register_duplicate_username_email(client):
+    payload_duplicate_username = {
+        "username": "testuser",
+        "first_name": "test",
+        "last_name": "user",
+        "email": "testuser@example.com",
+        "password": "secret123",
+    }
+    payload_duplicate_email = {
+        "username": "testuser1",
+        "first_name": "test",
+        "last_name": "user",
+        "email": "testuser@example.com",
+        "password": "secret123",
+    }
+    resp1 = await client.post("/auth/register", json=payload_duplicate_username)
+    assert resp1.status_code == 400
 
-    assert response.status_code == 400, response.text
+    resp2 = await client.post("/auth/register", json=payload_duplicate_email)
+    assert resp2.status_code == 400
+    assert "exists" in resp2.json()["detail"].lower()
 
 @pytest.mark.asyncio
-async def test_login_wrong_password():
-    async with AsyncClient(base_url=BASE_URL) as ac:
-        login_data = {
-            "username": "testuser1",
-            "password": "wrongpassword"
-        }
-        response = await ac.post("/auth/login", json=login_data)
+async def test_login_wrong_password(client):
+    payload = {
+        "username": "testuser5",
+        "password": "secret123",
+    }
+    resp = await client.post("/auth/login", json=payload)
+    assert resp.status_code == 400
 
-    assert response.status_code == 400, response.text
+    bad_login = {"username": "testuser", "password": "secret1234"}
+    resp2 = await client.post("/auth/login", json=bad_login)
+    assert resp2.status_code == 400
+    assert "incorrect" in resp2.json()["detail"].lower()
+
+
