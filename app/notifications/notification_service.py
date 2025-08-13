@@ -6,10 +6,11 @@ async def create_notfication(
     user_id: int,
     message: str,
     notification_type: NotificationType,
+    blog_id: int | None,
     session: AsyncSession,
 ):
     try:
-        notification = Notification(user_id=user_id, notification_type=notification_type, message=message)
+        notification = Notification(user_id=user_id, notification_type=notification_type, blog_id=blog_id, message=message)
         session.add(notification)
         await session.commit()
         await session.refresh(notification)

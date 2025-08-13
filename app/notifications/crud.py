@@ -22,6 +22,7 @@ async def get_notifications(search: str | None, limit: int , offset: int, sessio
         "id":  notification.id,
         "notification_type": notification.notification_type,
         "message": notification.message,
+        "blog_id": notification.blog_id,
         "created_at": notification.created_at,
     }for notification in notifications_result]
 

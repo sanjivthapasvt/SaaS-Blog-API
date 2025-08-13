@@ -5,3 +5,4 @@ class NotificationResponse(BaseModel):
     notification_type: str
     message: str
     created_at: datetime
+    blog_id: int | None
