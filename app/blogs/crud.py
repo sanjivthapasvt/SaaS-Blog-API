@@ -158,7 +158,7 @@ async def get_liked_blogs(session: AsyncSession, search: str, limit: int, offset
 
     query = select(Blog).where(Blog.id.in_(raw_blogs))  # type: ignore
         
-    total_query = select(func.count()).select_from(Blog)
+    total_query = select(func.count()).select_from(Blog).where(Blog.id.in_(raw_blogs)) # type: ignore
         
     if search:
         search_term = f"%{search.lower()}%"
