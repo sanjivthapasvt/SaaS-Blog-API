@@ -4,7 +4,7 @@ from app.blogs.crud import get_user_blogs
 from app.users.models import User
 from app.core.database import AsyncSession, get_session
 from app.auth.auth import get_current_user
-from app.users.schema import CurrentUserRead, UserRead
+from app.users.schema import CurrentUserRead, UserChangePassword, UserRead
 from app.models.schema import PaginatedResponse
 from app.users.crud import(
     list_users, 
@@ -26,10 +26,10 @@ router = APIRouter()
 @router.get("/users/me", response_model=CurrentUserRead)
 async def get_current_user_info_route(
     session: AsyncSession = Depends(get_session),
-    current_user:User = Depends(get_current_user)
+    current_user:UserRead = Depends(get_current_user)
 ):
     try:
-        return get_user_info(session=session, user_id=current_user.id) # type: ignore
+        return await get_user_info(session=session, user_id=current_user.id)
     except HTTPException:
         raise
     except Exception as e:
@@ -54,14 +54,12 @@ async def update_user_profile_route(
 
 @router.post("/users/me/password")
 async def change_password_route(
-    current_password: str,
-    new_password: str,
-    again_new_password: str,
+    password_info: UserChangePassword,
     session: AsyncSession =  Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
     try:
-        await change_user_password(session=session, current_user=current_user, current_password=current_password, new_password=new_password, again_new_password=again_new_password)
+        await change_user_password(session=session, current_user=current_user, current_password=password_info.current_password, new_password=password_info.new_password, again_new_password=password_info.again_new_password)
         return {"detail": "Successfully changed password"}
     except HTTPException:
         raise

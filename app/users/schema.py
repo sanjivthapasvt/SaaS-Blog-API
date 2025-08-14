@@ -13,3 +13,8 @@ class CurrentUserRead(BaseModel):
     profile_pic: str | None
     email: str | None
     joined_at: datetime
+
+class UserChangePassword(BaseModel):
+    current_password: str
+    new_password: str
+    again_new_password: str

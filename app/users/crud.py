@@ -1,6 +1,7 @@
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, select
+from app.utils.remove_image import remove_image
 from app.utils.save_image import save_image
 from app.auth.utils import verify_password, hash_password
 from app.users.models import User, UserFollowLink
@@ -41,13 +42,15 @@ async def update_user_profile(
     session: AsyncSession,
     current_user: User,
 ):
-    if not full_name or not profile_pic:
+    if not full_name and not profile_pic:
         raise HTTPException(status_code=400, detail="Both fields cannot be empty. At least one field must be provided")
-        
-    if full_name:
+    
+    if full_name is not None and full_name.strip() != "":
         current_user.full_name = full_name
         
     if profile_pic:
+        if current_user.profile_pic:
+            await remove_image(current_user.profile_pic)
         profile_pic_url = await save_image(profile_pic, profile_pic_path)
         current_user.profile_pic = profile_pic_url
 
