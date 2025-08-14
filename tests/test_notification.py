@@ -1,0 +1,76 @@
+import pytest
+from uuid import uuid4
+from httpx import AsyncClient
+
+async def _auth_header(client: AsyncClient) -> dict[str, str]:
+    unique = uuid4().hex[:8]
+    reg = await client.post(
+        "/auth/register",
+        json={
+            "username": f"blogger_{unique}",
+            "first_name": "Blog",
+            "last_name": "Ger",
+            "email": f"blogger_{unique}@example.com",
+            "password": "secret123",
+        },
+    )
+    assert reg.status_code == 200, reg.text
+    token = reg.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+@pytest.mark.asyncio
+async def test_get_all_notifications_empty(client: AsyncClient):
+    header = await _auth_header(client)
+    resp = await client.get("/api/notifications", headers=header)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert set(data.keys()) == {"total", "limit", "offset", "data"}
+    assert data["total"] == 0
+    assert isinstance(data["data"], list)
+
+
+@pytest.mark.asyncio
+async def test_like_blogs_to_create_notification_and_get_notification(client: AsyncClient):
+    headers1 = await _auth_header(client)
+    headers2 = await _auth_header(client)
+    
+    # create a blog
+    resp = await client.post(
+        "/api/blogs",
+        data={
+            "title": "Likeme",
+            "content": "Please like me",
+        },
+        headers=headers1,
+    )
+    assert resp.status_code == 200
+
+    # fetch id (search by title)
+    resp2 = await client.get("/api/blogs", params={"search": "Likeme"})
+    assert resp2.status_code == 200
+    items = resp2.json()["data"]
+    assert items and items[0]["title"] == "Likeme"
+    blog_id = items[0]["id"]
+
+    # like
+    resp3 = await client.post(f"/api/blogs/{blog_id}/like", headers=headers2)
+    assert resp3.status_code == 200
+    assert "added" in resp3.json()["detail"]
+
+    # unlike blog
+    resp5 = await client.post(f"/api/blogs/{blog_id}/like", headers=headers2)
+    assert resp5.status_code == 200
+    assert "removed" in resp5.json()["detail"]
+
+    # like again to check the same blog doesn't create multiple notification
+    resp3 = await client.post(f"/api/blogs/{blog_id}/like", headers=headers2)
+    assert resp3.status_code == 200
+    assert "added" in resp3.json()["detail"]
+
+    # test for get notification
+    resp = await client.get("/api/notifications", headers=headers1)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert set(data.keys()) == {"total", "limit", "offset", "data"}
+    assert data["total"] == 1
+    assert isinstance(data["data"], list)
