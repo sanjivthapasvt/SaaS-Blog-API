@@ -45,7 +45,7 @@ async def test_user_update_profile(client: AsyncClient):
 
 
     #update user profile with full_name and profile_pic #1
-    with open("test1.png", "rb") as f:
+    with open("tests/test1.png", "rb") as f:
         data = {
             "full_name": "updated_name_again",
         }
@@ -60,7 +60,7 @@ async def test_user_update_profile(client: AsyncClient):
     assert isinstance(data3["profile_pic"], str)
 
     #update user profile with full_name and profile_pic #2
-    with open("test2.jpeg", "rb") as f:
+    with open("tests/test2.jpeg", "rb") as f:
         files = {"profile_pic": ("second.png", f, "image/png")}
         resp5 = await client.patch("/api/users/me", files=files, headers=headers)
     assert resp5.status_code == 200
