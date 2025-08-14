@@ -69,6 +69,21 @@ async def change_password_route(
         raise HTTPException(status_code=500, detail=f"Something went wrong {str(e)}")
 
 
+@router.get("/users/me/blogs")
+async def list_current_user_blog_route(
+    search: str | None = Query(default=None),
+    limit:int = Query(10, ge=1),
+    offset:int = Query(0, ge=0),
+    session: AsyncSession = Depends(get_session),
+    current_user: UserRead = Depends(get_current_user)
+):
+    try:
+        return await get_user_blogs(session=session, search=search, limit=limit, offset=offset, user_id=current_user.id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{str(e)}")
+
 
 ################################################
 ###List User, Followers and Following routes####
@@ -169,7 +184,7 @@ async def list_user_blog_route(
     session: AsyncSession = Depends(get_session),
 ):
     try:
-        return get_user_blogs(session=session, search=search, limit=limit, offset=offset, user_id=user_id)
+        return await get_user_blogs(session=session, search=search, limit=limit, offset=offset, user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
