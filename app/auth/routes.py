@@ -76,7 +76,6 @@ async def login(user_data: UserLogin, session: AsyncSession = Depends(get_sessio
     Raises:
         HTTPException:
             - 400: If the username or password is incorrect.
-            - 403: If the password length is less than 6 characters.
             - 500: For unexpected server errors.
     """
     try:
