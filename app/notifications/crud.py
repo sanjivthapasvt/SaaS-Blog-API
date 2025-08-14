@@ -1,7 +1,7 @@
 from sqlmodel import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.notifications.models import Notification
-
+from fastapi.exceptions import HTTPException
 
 async def get_notifications(search: str | None, limit: int , offset: int, session: AsyncSession, current_user: int):
     query = select(Notification).where(Notification.owner == current_user).limit(limit).offset(offset)
@@ -32,3 +32,18 @@ async def get_notifications(search: str | None, limit: int , offset: int, sessio
         "offset": offset,
         "data": result,
     }
+
+
+async def mark_notification_as_read(session: AsyncSession, notification_id: int, current_user: int):
+    notification = await session.get(Notification, notification_id)
+    if not notification:
+        raise HTTPException(status_code=404, detail=f"Notificaiton not found")
+
+    if not notification.owner == current_user:
+        raise HTTPException(status_code=401, detail="You are not the owner of the notification")
+
+    notification.is_read = True
+    session.add(notification)
+    await session.commit()
+    await session.refresh(notification)
+    return {"detail": "Makred notification as read"}

@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.auth import get_current_user
+from app.auth.schemas import UserRead
 from app.core.database import get_session
 from app.users.models import User
 from app.notifications.schema import NotificationResponse
 from app.models.schema import PaginatedResponse
-from app.notifications.crud import get_notifications
+from app.notifications.crud import get_notifications, mark_notification_as_read
 
 
 router = APIRouter()
@@ -24,3 +25,16 @@ async def get_notifications_route(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Something went wrong while getting notification {str(e)}")
+
+@router.post("/notifications/{notification_id}/mark_as_read")
+async def mark_as_read_route(
+    notification_id: int,
+    session: AsyncSession = Depends(get_session), 
+    current_user: UserRead = Depends(get_current_user)
+):
+    try:
+        return await mark_notification_as_read(session=session, notification_id=notification_id, current_user=current_user.id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Something went wrong while marking notification as read {str(e)}")
