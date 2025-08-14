@@ -9,6 +9,7 @@ from app.notifications.notification_service import create_notfication
 from app.users.schema import CurrentUserRead
 from app.blogs.models import BlogTagLink, Comment, Blog, Tag
 from app.utils.save_image import save_image
+from app.utils.remove_image import remove_image
 
 async def create_new_blog(session: AsyncSession, title: str, thumbnail_url: str | None, content: str, author: int, tags: str | None) -> Blog:
     """
@@ -288,7 +289,8 @@ async def delete_blog(blog_id:int, session: AsyncSession, current_user: int ):
         
     if blog.author != current_user:
         raise HTTPException(status_code=401, detail="You are not the owner of the blog")
-
+    if blog.thumbnail_url:
+        await remove_image(blog.thumbnail_url)
     title = blog.title
     await session.delete(blog)
     await session.commit()
