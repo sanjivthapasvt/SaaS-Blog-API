@@ -4,8 +4,8 @@ from app.notifications.models import Notification
 
 
 async def get_notifications(search: str | None, limit: int , offset: int, session: AsyncSession, current_user: int):
-    query = select(Notification).where(Notification.user_id == current_user).limit(limit).offset(offset)
-    total_query = select(func.count()).select_from(Notification).where(Notification.user_id == current_user)
+    query = select(Notification).where(Notification.owner == current_user).limit(limit).offset(offset)
+    total_query = select(func.count()).select_from(Notification).where(Notification.owner == current_user)
         
     if search:
         search_term = f"%{search.lower()}%"
