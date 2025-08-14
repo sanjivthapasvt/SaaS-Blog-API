@@ -18,17 +18,14 @@ class Blog(SQLModel, table=True):
     content: str
     author : int = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    
+    is_public: bool = Field(default=True)
     likes: list["User"] = Relationship(back_populates="liked_blogs", link_model=BlogLikeLink)
-
     comments: list["Comment"] = Relationship(back_populates="blog")
-    
     tags: list["Tag"] = Relationship(back_populates="blogs", link_model=BlogTagLink)
 
 class Tag(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     title: str | None = Field(default=None, unique=True, index=True)
-
     blogs: list[Blog] = Relationship(back_populates="tags", link_model=BlogTagLink)
 
 class Comment(SQLModel, table=True):
@@ -37,7 +34,6 @@ class Comment(SQLModel, table=True):
     commented_by: int | None = Field(default=None, foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_modified: datetime | None= Field(default=None)
-    
     blog_id: int | None = Field(default=None, foreign_key="blog.id")
     blog: Blog | None = Relationship(back_populates="comments")
 
