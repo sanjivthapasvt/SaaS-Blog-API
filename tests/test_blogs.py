@@ -1,7 +1,8 @@
+from httpx import AsyncClient
 import pytest
 from uuid import uuid4
 
-async def _auth_header(client) -> dict[str, str]:
+async def _auth_header(client: AsyncClient) -> dict[str, str]:
     unique = uuid4().hex[:8]
     reg = await client.post(
         "/auth/register",
@@ -19,7 +20,7 @@ async def _auth_header(client) -> dict[str, str]:
 
 
 @pytest.mark.asyncio
-async def test_get_all_blogs_empty(client):
+async def test_get_all_blogs_empty(client: AsyncClient):
     resp = await client.get("/api/blogs")
     assert resp.status_code == 200
     data = resp.json()
@@ -29,7 +30,7 @@ async def test_get_all_blogs_empty(client):
 
 
 @pytest.mark.asyncio
-async def test_create_and_fetch_blog_flow(client):
+async def test_create_and_fetch_blog_flow(client: AsyncClient):
     headers = await _auth_header(client)
 
     # create blog
@@ -62,7 +63,7 @@ async def test_create_and_fetch_blog_flow(client):
 
 
 @pytest.mark.asyncio
-async def test_like_unlike_and_liked_blogs(client):
+async def test_like_unlike_and_liked_blogs(client: AsyncClient):
     headers = await _auth_header(client)
 
     # create a blog
