@@ -75,7 +75,7 @@ async def like_unlike_blog(session: AsyncSession, blog_id: int, current_user: Cu
 
     notification = await session.execute(
         select(Notification).where(
-            (Notification.user_id == current_user.id) &
+            (Notification.owner != current_user.id) &
             (Notification.blog_id == blog.id) &
             (Notification.notification_type == NotificationType.LIKE)
         )
@@ -83,10 +83,10 @@ async def like_unlike_blog(session: AsyncSession, blog_id: int, current_user: Cu
 
     existing_notification = notification.scalars().first()
 
-    if not existing_notification and not current_user.id == blog.author:
+    if not existing_notification and not (current_user.id == blog.author):
         await create_notfication(
             session=session,
-            user_id = blog.author,
+            owner = blog.author,
             blog_id = blog.id,
             notification_type=NotificationType.LIKE,
             message=f"{current_user.full_name} liked your blog {blog.title}"

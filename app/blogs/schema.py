@@ -21,3 +21,6 @@ class CommentData(BaseModel):
     content: str
     commmented_by: int
     created_at: datetime
+
+class CommentWrite(BaseModel):
+    content: str
