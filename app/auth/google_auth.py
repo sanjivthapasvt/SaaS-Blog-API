@@ -8,6 +8,7 @@ from sqlmodel import select
 from app.users.models import User
 from app.core.database import get_session
 from app.auth.auth import create_access_token
+from fastapi_limiter.depends import RateLimiter
 
 router = APIRouter()
 
@@ -18,7 +19,7 @@ GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 
 
 #this get method redirects you to google login page
-@router.get("/google")
+@router.get("/google", dependencies=[Depends(RateLimiter(times=5, minutes=15))])
 async def get_google_login_url():
     """
     Redirects user to  google login .
@@ -57,7 +58,7 @@ async def get_google_login_url():
 # The google redirect uri should be same as path here 
 # In my case In google I have set GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 # The google returns access_token and we can use it to get user info including id, email, name and picture
-@router.get("/google/callback")
+@router.get("/google/callback", dependencies=[Depends(RateLimiter(times=5, minutes=15))])
 async def auth_google(code: str, session: AsyncSession = Depends(get_session)):
     """
     Register or Login user after user completes google login
