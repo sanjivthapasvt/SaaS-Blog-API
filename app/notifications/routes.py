@@ -3,30 +3,30 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.auth import get_current_user
 from app.auth.schemas import UserRead
 from app.core.database import get_session
-from app.users.models import User
 from app.notifications.schema import NotificationResponse
 from app.models.schema import PaginatedResponse
 from app.notifications.crud import get_notifications, mark_notification_as_read
-
+from fastapi_limiter.depends import RateLimiter
+from app.utils.rate_limiter import user_identifier
 
 router = APIRouter()
 
-@router.get("/notifications", response_model=PaginatedResponse[NotificationResponse])
+@router.get("/notifications", response_model=PaginatedResponse[NotificationResponse], dependencies=[Depends(RateLimiter(times=15, minutes=1, identifier=user_identifier))])
 async def get_notifications_route(
     search: str | None = Query(default=None),
     limit: int = Query(10, ge=1),
     offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),    
+    current_user: UserRead = Depends(get_current_user),    
 ):
     try:
-        return await get_notifications(session=session, search=search, limit=limit, offset=offset, current_user=current_user.id) # type: ignore
+        return await get_notifications(session=session, search=search, limit=limit, offset=offset, current_user=current_user.id)
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Something went wrong while getting notification {str(e)}")
 
-@router.post("/notifications/{notification_id}/mark_as_read")
+@router.post("/notifications/{notification_id}/mark_as_read", dependencies=[Depends(RateLimiter(times=5, minutes=1, identifier=user_identifier))])
 async def mark_as_read_route(
     notification_id: int,
     session: AsyncSession = Depends(get_session), 
