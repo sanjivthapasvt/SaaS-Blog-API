@@ -11,7 +11,7 @@ from fastapi_limiter.depends import RateLimiter
 router = APIRouter()
 
 
-@router.post("/register", response_model=Token, dependencies=[Depends(RateLimiter(times=5, hours=1))])
+@router.post("/register", response_model=Token, dependencies=[Depends(RateLimiter(times=25, hours=1))])
 async def register(user_data: UserCreate , session: AsyncSession = Depends(get_session)):
     """
     Register a new user and return an authentication token.
@@ -60,7 +60,7 @@ async def register(user_data: UserCreate , session: AsyncSession = Depends(get_s
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
-@router.post("/login", response_model=Token, dependencies=[Depends(RateLimiter(times=5, minutes=15))])
+@router.post("/login", response_model=Token, dependencies=[Depends(RateLimiter(times=5, minutes=1))])
 async def login(user_data: UserLogin, session: AsyncSession = Depends(get_session)):
     """
     Login a existing user and return an authentication token.
