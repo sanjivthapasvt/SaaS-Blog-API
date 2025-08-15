@@ -6,10 +6,12 @@ from app.users.models import User
 from app.auth.schemas import UserCreate, Token, UserLogin
 from app.auth.utils import hash_password, verify_password
 from app.auth.auth import create_access_token
+from fastapi_limiter.depends import RateLimiter
 
 router = APIRouter()
 
-@router.post("/register", response_model=Token)
+
+@router.post("/register", response_model=Token, dependencies=[Depends(RateLimiter(times=5, hours=1))])
 async def register(user_data: UserCreate , session: AsyncSession = Depends(get_session)):
     """
     Register a new user and return an authentication token.
@@ -58,7 +60,7 @@ async def register(user_data: UserCreate , session: AsyncSession = Depends(get_s
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, dependencies=[Depends(RateLimiter(times=5, minutes=15))])
 async def login(user_data: UserLogin, session: AsyncSession = Depends(get_session)):
     """
     Login a existing user and return an authentication token.
