@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query, UploadFile, Form
 from fastapi.exceptions import HTTPException
+from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.users.schema import CurrentUserRead
 from app.core.database import get_session
@@ -7,6 +8,7 @@ from app.blogs.schema import BlogContentResponse, BlogResponse
 from app.models.schema import PaginatedResponse
 from app.utils.save_image import save_image
 from app.auth.auth import get_current_user
+from app.utils.rate_limiter import user_identifier
 from app.blogs.crud import (
     get_blog_by_id, 
     create_new_blog,
@@ -23,7 +25,7 @@ router = APIRouter()
 thumbnail_path: str = "blogs/thumbnail"
 
 
-@router.post("/blogs")
+@router.post("/blogs", dependencies=[Depends(RateLimiter(times=10, minutes=1, identifier=user_identifier))])
 async def create_blog_route(
     title: str = Form(...),
     content: str = Form(...),
@@ -54,7 +56,7 @@ async def create_blog_route(
     except Exception as e:
         raise (HTTPException(status_code=500, detail=f"Something went wrong {str(e)}"))
 
-@router.post("/blogs/{blog_id}/like")
+@router.post("/blogs/{blog_id}/like", dependencies=[Depends(RateLimiter(times=20, minutes=1, identifier=user_identifier))])
 async def like_blog_route(
     blog_id: int,
     current_user: CurrentUserRead = Depends(get_current_user),
@@ -69,7 +71,7 @@ async def like_blog_route(
         raise HTTPException(status_code=500, detail=f"Something went wrong while liking post {str(e)}")
 
 
-@router.get("/blogs", response_model=PaginatedResponse[BlogResponse])
+@router.get("/blogs", response_model=PaginatedResponse[BlogResponse], dependencies=[Depends(RateLimiter(times=60, minutes=1, identifier=user_identifier))])
 async def get_all_blogs_route(
     search: str = Query(default=None),
     limit :int = Query(10, ge=1),
@@ -86,7 +88,7 @@ async def get_all_blogs_route(
         raise HTTPException(status_code=500, detail=f"Something went wrong while getting blogs {str(e)}")
 
 
-@router.get("/blogs/liked", response_model=PaginatedResponse[BlogResponse])
+@router.get("/blogs/liked", response_model=PaginatedResponse[BlogResponse], dependencies=[Depends(RateLimiter(times=30, minutes=1, identifier=user_identifier))])
 async def get_liked_blog_route(
     search: str = Query(default=None),
     limit :int = Query(10, ge=1),
@@ -102,7 +104,7 @@ async def get_liked_blog_route(
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 
-@router.get("/blogs/{blog_id}", response_model=BlogContentResponse)
+@router.get("/blogs/{blog_id}", response_model=BlogContentResponse, dependencies=[Depends(RateLimiter(times=20, minutes=1, identifier=user_identifier))])
 async def get_specefic_blog_route(
     blog_id: int, 
     session: AsyncSession = Depends(get_session)
@@ -118,7 +120,7 @@ async def get_specefic_blog_route(
 
 
 
-@router.patch("/blogs/{blogs_id}")
+@router.patch("/blogs/{blogs_id}", dependencies=[Depends(RateLimiter(times=10, minutes=1, identifier=user_identifier))])
 async def update_blog_route(
     blog_id: int,
     title: str | None = Form(None),
@@ -138,7 +140,7 @@ async def update_blog_route(
         raise HTTPException(status_code=500, detail=f"Something went wrong{str(e)}")
 
 
-@router.delete("/blogs/{blog_id}")
+@router.delete("/blogs/{blog_id}", dependencies=[Depends(RateLimiter(times=10, minutes=1, identifier=user_identifier))])
 async def delete_blog_route(
     blog_id:int,
     session: AsyncSession =  Depends(get_session), 
