@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi import FastAPI
@@ -11,16 +12,28 @@ from app.blogs.routes import router as blog_router
 from app.blogs.comment_routes import router as comment_router
 from app.notifications.routes import router as notification_router
 from app.users.routes import router as users_router
+from fastapi_limiter import FastAPILimiter
+import redis.asyncio as redis
 
+from fakeredis import FakeAsyncRedis
 
 load_dotenv()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    redis_connection = redis.from_url("redis://localhost:6379", encoding="utf8")
+    testing = os.environ.get("TESTING") == "1"
+    
+    if testing:
+        redis_connection = FakeAsyncRedis()
+    
+    await FastAPILimiter.init(redis_connection)
     await init_db()
     yield
+    await redis_connection.aclose()
 
+    
 app = FastAPI(lifespan=lifespan)
 
 origins = [
