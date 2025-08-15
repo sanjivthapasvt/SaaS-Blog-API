@@ -16,14 +16,15 @@ from app.users.crud import(
     follow_user, 
     unfollow_user
 )
-
+from app.utils.rate_limiter import user_identifier
+from fastapi_limiter.depends import RateLimiter
 router = APIRouter()
 
 #########################
 ###Current User Action###
 #########################
 
-@router.get("/users/me", response_model=CurrentUserRead)
+@router.get("/users/me", response_model=CurrentUserRead, dependencies=[Depends(RateLimiter(times=10, minutes=1, identifier=user_identifier))])
 async def get_current_user_info_route(
     session: AsyncSession = Depends(get_session),
     current_user:UserRead = Depends(get_current_user)
@@ -36,7 +37,7 @@ async def get_current_user_info_route(
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 
-@router.patch("/users/me")
+@router.patch("/users/me", dependencies=[Depends(RateLimiter(times=5, minutes=1, identifier=user_identifier))])
 async def update_user_profile_route(
     full_name: str | None = Form(None),
     profile_pic: UploadFile | None =  None,
@@ -52,7 +53,7 @@ async def update_user_profile_route(
         raise HTTPException(status_code=500, detail=f"Something went wrong while updating user profile {str(e)}")
     
 
-@router.post("/users/me/password")
+@router.post("/users/me/password", dependencies=[Depends(RateLimiter(times=5, hours=1, identifier=user_identifier))])
 async def change_password_route(
     password_info: UserChangePassword,
     session: AsyncSession =  Depends(get_session),
@@ -67,7 +68,7 @@ async def change_password_route(
         raise HTTPException(status_code=500, detail=f"Something went wrong {str(e)}")
 
 
-@router.get("/users/me/blogs")
+@router.get("/users/me/blogs", dependencies=[Depends(RateLimiter(times=10, minutes=1, identifier=user_identifier))])
 async def list_current_user_blog_route(
     search: str | None = Query(default=None),
     limit:int = Query(10, ge=1),
@@ -87,7 +88,7 @@ async def list_current_user_blog_route(
 ###List User, Followers and Following routes####
 ################################################
 
-@router.get("/users", response_model=PaginatedResponse[UserRead], dependencies=[Depends(get_current_user)])
+@router.get("/users", response_model=PaginatedResponse[UserRead], dependencies=[Depends(get_current_user), Depends(RateLimiter(times=20, minutes=1, identifier=user_identifier))])
 async def list_users_route(
     search: str = Query(default=None),
     limit: int = Query(15, ge=1),
@@ -103,7 +104,7 @@ async def list_users_route(
 
 
 
-@router.get("/users/{user_id}/followers", response_model=PaginatedResponse[UserRead], dependencies=[Depends(get_current_user)])
+@router.get("/users/{user_id}/followers", response_model=PaginatedResponse[UserRead], dependencies=[Depends(get_current_user), Depends(RateLimiter(times=20, minutes=1, identifier=user_identifier))])
 async def list_followers_route(
     user_id: int,
     search: str = Query(default=None),
@@ -120,7 +121,7 @@ async def list_followers_route(
 
 
 
-@router.get("/users/{user_id}/following", response_model=PaginatedResponse[UserRead], dependencies=[Depends(get_current_user)])
+@router.get("/users/{user_id}/following", response_model=PaginatedResponse[UserRead], dependencies=[Depends(get_current_user), Depends(RateLimiter(times=20, minutes=1, identifier=user_identifier))])
 async def list_followings_route(
     user_id: int,
     search: str = Query(default=None),
@@ -139,7 +140,7 @@ async def list_followings_route(
 ##########################
 ###Follow Unfollow User###
 ##########################
-@router.post("/users/{user_id}/follow")
+@router.post("/users/{user_id}/follow", dependencies=[Depends(RateLimiter(times=25, minutes=1, identifier=user_identifier))])
 async def follow_user_route(
     user_id: int,
     session: AsyncSession = Depends(get_session),
@@ -155,7 +156,7 @@ async def follow_user_route(
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 
-@router.delete("/users/{user_id}/follow")
+@router.delete("/users/{user_id}/follow", dependencies=[Depends(RateLimiter(times=25, minutes=1, identifier=user_identifier))])
 async def unfollow_user_route(
     user_id: int,
     session: AsyncSession = Depends(get_session),
@@ -173,7 +174,7 @@ async def unfollow_user_route(
 ###List User Blogs###
 #####################
 
-@router.get("/users/{user_id}/blogs")
+@router.get("/users/{user_id}/blogs", dependencies=[Depends(RateLimiter(times=20, minutes=1, identifier=user_identifier))])
 async def list_user_blog_route(
     user_id: int,
     search: str | None = Query(default=None),
