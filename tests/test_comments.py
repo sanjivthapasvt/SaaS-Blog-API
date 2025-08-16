@@ -32,7 +32,7 @@ async def _create_blog(client: AsyncClient):
         headers=headers,
     )
 
-    assert resp.status_code == 200
+    assert resp.status_code == 201
 
     # list blogs
     resp2 = await client.get("/api/users/me/blogs", headers=headers)

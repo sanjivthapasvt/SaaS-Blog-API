@@ -43,7 +43,7 @@ async def test_like_blogs_to_create_notification_and_get_notification(client: As
         },
         headers=headers1,
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 201
 
     # fetch id (search by title)
     resp2 = await client.get("/api/blogs", params={"search": "Likeme"})

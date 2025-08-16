@@ -43,7 +43,7 @@ async def test_create_and_fetch_blog_flow(client: AsyncClient):
         },
         headers=headers,
     )
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code == 201, resp.text
     body = resp.json()
     assert body["detail"].startswith("Successfully")
 
@@ -75,7 +75,7 @@ async def test_like_unlike_and_liked_blogs(client: AsyncClient):
         },
         headers=headers,
     )
-    assert resp.status_code == 200
+    assert resp.status_code == 201
 
     # fetch id (search by title)
     resp2 = await client.get("/api/blogs", params={"search": "Likeable"})
