@@ -1,6 +1,7 @@
 from httpx import AsyncClient
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_register_and_login_flow(client: AsyncClient):
     register_payload = {
@@ -23,6 +24,7 @@ async def test_register_and_login_flow(client: AsyncClient):
     data = resp.json()
     assert set(data.keys()) == {"access_token", "token_type"}
     assert data["token_type"] == "bearer"
+
 
 @pytest.mark.asyncio
 async def test_register_duplicate_username_email(client: AsyncClient):
@@ -47,6 +49,7 @@ async def test_register_duplicate_username_email(client: AsyncClient):
     assert resp2.status_code == 400
     assert "exists" in resp2.json()["detail"].lower()
 
+
 @pytest.mark.asyncio
 async def test_login_wrong_password(client: AsyncClient):
     payload = {
@@ -60,5 +63,3 @@ async def test_login_wrong_password(client: AsyncClient):
     resp2 = await client.post("/auth/login", json=bad_login)
     assert resp2.status_code == 400
     assert "incorrect" in resp2.json()["detail"].lower()
-
-

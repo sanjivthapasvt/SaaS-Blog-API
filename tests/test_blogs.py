@@ -2,6 +2,7 @@ from httpx import AsyncClient
 import pytest
 from uuid import uuid4
 
+
 async def _auth_header(client: AsyncClient) -> dict[str, str]:
     unique = uuid4().hex[:8]
     reg = await client.post(
