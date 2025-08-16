@@ -4,12 +4,13 @@ from aiosqlite import IntegrityError
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlmodel import func, select
+from sqlmodel import func, select, insert
 
 from app.blogs.models import Blog, BlogTagLink, Comment, Tag
 from app.models.blog_like_link import BlogLikeLink
 from app.notifications.models import Notification, NotificationType
 from app.notifications.notification_service import create_notfication
+from app.users.models import UserFollowLink
 from app.users.schema import CurrentUserRead
 from app.utils.remove_image import remove_image
 from app.utils.save_image import save_image
@@ -20,7 +21,7 @@ async def create_new_blog(
     title: str,
     thumbnail_url: str | None,
     content: str,
-    author: int,
+    current_user: CurrentUserRead,
     tags: str | None,
 ) -> Blog:
     """
@@ -31,11 +32,38 @@ async def create_new_blog(
     Returns the created Blog instance.
     """
     new_blog = Blog(
-        title=title, thumbnail_url=thumbnail_url, content=content, author=author
+        title=title,
+        thumbnail_url=thumbnail_url,
+        content=content,
+        author=current_user.id,
     )
+    
     session.add(new_blog)
     await session.commit()
     await session.refresh(new_blog)
+    
+    #listing followers of current user to create notification for them
+    followers = await session.execute(
+        select(UserFollowLink.following_id).where(
+            UserFollowLink.follower_id == current_user.id
+        )
+    )
+    followers_result = followers.scalars().all()
+
+    #creating notificatoin for all users in single query
+    notifications = [{
+        "owner_id": follower_ids, 
+        "triggered_by_user_id": new_blog.author,
+        "blog_id": new_blog.id,
+        "notification_type": NotificationType.NEW_BLOG,
+        "message": f"{current_user.full_name} uploaded new blog {new_blog.title}",
+    }for follower_ids in followers_result]
+
+
+    if notifications:  # insert if there are followers
+        await session.execute(insert(Notification).values(notifications))
+        await session.commit()
+
 
     if tags:
         # split tags by #
