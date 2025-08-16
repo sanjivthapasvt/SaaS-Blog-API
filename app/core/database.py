@@ -1,5 +1,6 @@
 import os
-from typing import AsyncGenerator
+from typing import Annotated, AsyncGenerator
+from fastapi import Depends
 from sqlmodel import SQLModel
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
@@ -29,5 +30,3 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         except:
             await session.rollback()
             raise
-        finally:
-            await session.close()
