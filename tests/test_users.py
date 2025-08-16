@@ -2,6 +2,7 @@ from httpx import AsyncClient
 import pytest
 from uuid import uuid4
 
+
 async def _auth_header(client: AsyncClient) -> dict[str, str]:
     unique = uuid4().hex[:8]
     reg = await client.post(
@@ -25,16 +26,25 @@ async def test_get_user_me(client: AsyncClient):
     resp1 = await client.get("/api/users/me", headers=headers)
     assert resp1.status_code == 200
     data1 = resp1.json()
-    assert set(data1.keys()) == {"id", "username", "full_name", "profile_pic", "email", "joined_at"}
+    assert set(data1.keys()) == {
+        "id",
+        "username",
+        "full_name",
+        "profile_pic",
+        "email",
+        "joined_at",
+    }
 
 
 @pytest.mark.asyncio
 async def test_user_update_profile(client: AsyncClient):
     headers = await _auth_header(client)
 
-    #update only full name
+    # update only full name
 
-    resp1 = await client.patch("/api/users/me", data={"full_name": "updated_name"}, headers=headers)
+    resp1 = await client.patch(
+        "/api/users/me", data={"full_name": "updated_name"}, headers=headers
+    )
     assert resp1.status_code == 200
 
     resp2 = await client.get("/api/users/me", headers=headers)
@@ -43,71 +53,65 @@ async def test_user_update_profile(client: AsyncClient):
     assert data1["full_name"] == "updated_name"
     assert data1["profile_pic"] == None
 
-
-    #update user profile with full_name and profile_pic #1
+    # update user profile with full_name and profile_pic #1
     with open("tests/test1.png", "rb") as f:
         data = {
             "full_name": "updated_name_again",
         }
         files = {"profile_pic": ("first.png", f, "image/png")}
-        resp3 = await client.patch("/api/users/me", data=data, files=files, headers=headers)
-    
+        resp3 = await client.patch(
+            "/api/users/me", data=data, files=files, headers=headers
+        )
+
     assert resp3.status_code == 200
-    
+
     resp4 = await client.get("/api/users/me", headers=headers)
     data3 = resp4.json()
     assert data3["full_name"] == "updated_name_again"
     assert isinstance(data3["profile_pic"], str)
 
-    #update user profile with full_name and profile_pic #2
+    # update user profile with full_name and profile_pic #2
     with open("tests/test2.jpeg", "rb") as f:
         files = {"profile_pic": ("second.png", f, "image/png")}
         resp5 = await client.patch("/api/users/me", files=files, headers=headers)
     assert resp5.status_code == 200
-    
+
     resp6 = await client.get("/api/users/me", headers=headers)
     data4 = resp6.json()
     assert data4["full_name"] == "updated_name_again"
     assert isinstance(data4["profile_pic"], str)
 
+
 @pytest.mark.asyncio
 async def test_user_change_password(client: AsyncClient):
     headers = await _auth_header(client)
     resp = await client.post(
-        "/api/users/me/password", 
+        "/api/users/me/password",
         json={
             "current_password": "secret123",
             "new_password": "secret1234",
-            "again_new_password": "secret1234"
+            "again_new_password": "secret1234",
         },
-        headers=headers
+        headers=headers,
     )
-    
+
     assert resp.status_code == 200
 
     resp2 = await client.get("/api/users/me", headers=headers)
     data = resp2.json()
-    username =  data["username"]
+    username = data["username"]
 
-    #try to login with old password
+    # try to login with old password
     resp3 = await client.post(
-        "/auth/login", 
-        json={
-            "username": username,
-            "password": "secret123"
-        }
+        "/auth/login", json={"username": username, "password": "secret123"}
     )
     data1 = resp3.json()
     assert resp3.status_code == 400
     assert "incorrect" in data1["detail"].lower()
-   
-    #try to login with new password
+
+    # try to login with new password
     resp4 = await client.post(
-        "/auth/login",
-        json={
-            "username": username,
-            "password": "secret1234"
-        }
+        "/auth/login", json={"username": username, "password": "secret1234"}
     )
     assert resp4.status_code == 200
     data2 = resp4.json()
