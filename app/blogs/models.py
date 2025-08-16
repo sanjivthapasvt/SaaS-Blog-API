@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Column, Field, Relationship, SQLModel, Text
 
 from app.models.blog_like_link import BlogLikeLink
 
@@ -18,7 +18,7 @@ class Blog(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     title: str = Field(index=True)
     thumbnail_url: str | None = Field(default=None)
-    content: str
+    content: str = Field(sa_column=Column(Text))
     author: int = Field(foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_public: bool = Field(default=True)
@@ -37,7 +37,7 @@ class Tag(SQLModel, table=True):
 
 class Comment(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    content: str
+    content: str = Field(sa_column=Column(Text))
     commented_by: int | None = Field(default=None, foreign_key="user.id")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_modified: datetime | None = Field(default=None)
