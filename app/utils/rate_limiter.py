@@ -2,7 +2,7 @@ from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.auth.auth import decode_access_token
+from app.auth.jwt_handler import decode_token
 from app.core.database import get_session
 from app.users.models import User
 
@@ -16,7 +16,7 @@ async def get_user_for_rate_limit(
             return None
 
         token = auth_header.split(" ")[1]
-        sub = decode_access_token(token)
+        sub = decode_token(token, expected_type="access")
 
         if not sub:
             return None

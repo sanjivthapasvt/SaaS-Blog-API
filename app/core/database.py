@@ -2,8 +2,7 @@ import os
 from typing import Annotated, AsyncGenerator
 
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
-                                    create_async_engine)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///database.db")  # for dev
