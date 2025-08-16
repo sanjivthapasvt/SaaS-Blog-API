@@ -3,14 +3,15 @@ from app.notifications.models import NotificationType, Notification
 from app.utils.logger import logger
 
 async def create_notfication(
-    owner: int,
+    owner_id: int,
+    triggered_by_user_id: int,
     message: str,
     notification_type: NotificationType,
     blog_id: int | None,
     session: AsyncSession,
 ):
     try:
-        notification = Notification(owner=owner, notification_type=notification_type, blog_id=blog_id, message=message)
+        notification = Notification(owner_id=owner_id, triggered_by_user_id=triggered_by_user_id, notification_type=notification_type, blog_id=blog_id, message=message)
         session.add(notification)
         await session.commit()
         await session.refresh(notification)

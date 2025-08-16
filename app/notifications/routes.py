@@ -8,7 +8,7 @@ from app.models.schema import PaginatedResponse
 from app.notifications.crud import get_notifications, mark_notification_as_read
 from fastapi_limiter.depends import RateLimiter
 from app.utils.rate_limiter import user_identifier
-
+from typing import List
 router = APIRouter()
 
 @router.get("/notifications", response_model=PaginatedResponse[NotificationResponse], dependencies=[Depends(RateLimiter(times=15, minutes=1, identifier=user_identifier))])
@@ -20,7 +20,21 @@ async def get_notifications_route(
     current_user: UserRead = Depends(get_current_user),    
 ):
     try:
-        return await get_notifications(session=session, search=search, limit=limit, offset=offset, current_user=current_user.id)
+        notifications_result, total_result = await get_notifications(
+            session=session,
+            search=search,
+            limit=limit,
+            offset=offset,
+            current_user=current_user.id
+        )
+
+        return PaginatedResponse[NotificationResponse](
+            total=total_result,
+            limit=limit,
+            offset=offset,
+            data=[NotificationResponse.model_validate(obj) for obj in notifications_result],
+        )
+
     except HTTPException:
         raise
     except Exception as e:
