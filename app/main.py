@@ -11,6 +11,7 @@ from fastapi_limiter import FastAPILimiter
 
 from app.auth.google_auth import router as google_auth_router
 from app.auth.routes import router as auth_router
+from app.auth.security import TokenBlacklist
 from app.blogs.comment_routes import router as comment_router
 from app.blogs.routes import router as blog_router
 from app.core.database import init_db
@@ -30,7 +31,13 @@ async def lifespan(app: FastAPI):
 
     await FastAPILimiter.init(redis_connection)
     await init_db()
+
+    # store redis in app.state
+    app.state.redis = redis_connection
+    app.state.token_blacklist = TokenBlacklist(redis_connection)
+
     yield
+
     await redis_connection.aclose()
 
 
