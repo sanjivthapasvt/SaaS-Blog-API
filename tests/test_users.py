@@ -1,6 +1,7 @@
-from httpx import AsyncClient
-import pytest
 from uuid import uuid4
+
+import pytest
+from httpx import AsyncClient
 
 
 async def _auth_header(client: AsyncClient) -> dict[str, str]:
@@ -115,5 +116,5 @@ async def test_user_change_password(client: AsyncClient):
     )
     assert resp4.status_code == 200
     data2 = resp4.json()
-    assert set(data2.keys()) == {"access_token", "token_type"}
+    assert set(data2.keys()) == {"access_token", "refresh_token", "token_type"}
     assert data2["token_type"] == "bearer"

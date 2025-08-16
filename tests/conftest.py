@@ -1,12 +1,14 @@
 import os
+from unittest.mock import AsyncMock, patch
+
 import pytest_asyncio
-from unittest.mock import patch, AsyncMock
+from asgi_lifespan import LifespanManager
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
-from httpx import AsyncClient, ASGITransport
-from asgi_lifespan import LifespanManager
-from app.main import app
+
 from app.core.database import get_session
+from app.main import app
 
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]

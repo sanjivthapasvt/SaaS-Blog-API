@@ -1,5 +1,5 @@
-from httpx import AsyncClient
 import pytest
+from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
@@ -15,14 +15,14 @@ async def test_register_and_login_flow(client: AsyncClient):
     resp = await client.post("/auth/register", json=register_payload)
     assert resp.status_code == 200, resp.text
     data = resp.json()
-    assert set(data.keys()) == {"access_token", "token_type"}
+    assert set(data.keys()) == {"access_token", "refresh_token", "token_type"}
     assert data["token_type"] == "bearer"
 
     login_payload = {"username": "testuser", "password": "secret123"}
     resp = await client.post("/auth/login", json=login_payload)
     assert resp.status_code == 200, resp.text
     data = resp.json()
-    assert set(data.keys()) == {"access_token", "token_type"}
+    assert set(data.keys()) == {"access_token", "refresh_token", "token_type"}
     assert data["token_type"] == "bearer"
 
 

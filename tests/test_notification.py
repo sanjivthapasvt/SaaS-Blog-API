@@ -1,5 +1,6 @@
 import pytest
 from httpx import AsyncClient
+
 from tests.auth_utils import _create_user, _login_user
 
 
@@ -61,4 +62,3 @@ async def test_like_blogs_to_create_notification_and_get_notification(
     assert set(data.keys()) == {"total", "limit", "offset", "data"}
     assert data["total"] == 1
     assert isinstance(data["data"], list)
-

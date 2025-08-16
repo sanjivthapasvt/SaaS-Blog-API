@@ -1,5 +1,7 @@
-from httpx import AsyncClient
 from uuid import uuid4
+
+from httpx import AsyncClient
+
 
 async def _create_user(client: AsyncClient, username: str) -> dict[str, str]:
     reg = await client.post(
@@ -28,7 +30,6 @@ async def _login_user(client: AsyncClient, username: str) -> dict[str, str]:
     assert log.status_code == 200, log.text
     token = log.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
-
 
 
 async def _unique_auth_header(client: AsyncClient) -> dict[str, str]:
