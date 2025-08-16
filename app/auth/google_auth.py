@@ -8,7 +8,7 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.auth.jwt_handler import create_access_token
+from app.auth.jwt_handler import create_access_token, create_refresh_token
 from app.core.database import get_session
 from app.users.models import User
 
@@ -135,9 +135,13 @@ async def auth_google(code: str, session: AsyncSession = Depends(get_session)):
                 session=session,
             )
 
-        token = create_access_token({"sub": user.google_id})
-
-        return {"access_token": token, "token_type": "bearer"}
+        access_token = create_access_token({"sub": user.google_id})
+        refresh_token = create_refresh_token({"sub": user.google_id})
+        return {
+            "access_token":access_token , 
+            "refresh_token": refresh_token, 
+            "token_type": "bearer"
+        }
 
     except HTTPException:
         raise
