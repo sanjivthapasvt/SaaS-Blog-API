@@ -43,7 +43,7 @@ async def create_blog_route(
             title=title,
             thumbnail_url=thumbnail_url,
             content=content,
-            author=current_user.id,
+            current_user=current_user,
             tags=tags,
         )
 
