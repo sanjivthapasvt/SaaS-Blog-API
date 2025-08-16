@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Column, Field, Relationship, SQLModel, Text
 
 from app.models.blog_like_link import BlogLikeLink
 
@@ -25,9 +25,10 @@ class User(SQLModel, table=True):
         default=None,
     )
     google_id: str | None = Field(default=None, unique=True, index=True)
-    username: str | None = Field(unique=True, index=True)
+    username: str | None = Field(unique=True, index=True, max_length=50)
     email: str = Field(unique=True, index=True)
     full_name: str = Field(default=None)
+    bio: str | None = Field(default=None, sa_column=Column(Text))
     joined_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     hashed_password: str | None = None
     is_active: bool = Field(default=True)
