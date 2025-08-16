@@ -1,7 +1,8 @@
 import os
 import uuid
-from fastapi import UploadFile, HTTPException
+
 import aiofiles
+from fastapi import HTTPException, UploadFile
 
 BASE_UPLOAD_DIR = "media/uploads"
 BASE_MEDIA_URL = "/media/uploads"
@@ -10,15 +11,18 @@ os.makedirs(BASE_UPLOAD_DIR, exist_ok=True)
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/jpg", "image/gif"}
 
-#async function to save image to disk and return media url
-async def save_image(image: UploadFile | None, upload_subdir: str | None = None) -> str | None:
+
+# async function to save image to disk and return media url
+async def save_image(
+    image: UploadFile | None, upload_subdir: str | None = None
+) -> str | None:
     if not image:
         return None
 
     if image.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(
             status_code=400,
-            detail="Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed."
+            detail="Invalid file type. Only JPG, JPEG, PNG, and GIF are allowed.",
         )
 
     upload_dir = BASE_UPLOAD_DIR
@@ -33,8 +37,8 @@ async def save_image(image: UploadFile | None, upload_subdir: str | None = None)
     file_path = os.path.join(upload_dir, filename)
 
     # Async write file
-    async with aiofiles.open(file_path, 'wb') as out_file:
-        content = await image.read() 
+    async with aiofiles.open(file_path, "wb") as out_file:
+        content = await image.read()
         await out_file.write(content)
 
     return f"{media_url}/{filename}"

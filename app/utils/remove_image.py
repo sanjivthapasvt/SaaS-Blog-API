@@ -1,6 +1,8 @@
-import os
 import asyncio
+import os
+
 from fastapi import HTTPException
+
 
 async def remove_image(image_url: str):
     # Remove leading slash if present

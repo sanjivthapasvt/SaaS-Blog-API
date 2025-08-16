@@ -1,5 +1,7 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
 
 class NotificationResponse(BaseModel):
     id: int
@@ -9,4 +11,4 @@ class NotificationResponse(BaseModel):
     created_at: datetime
     blog_id: int | None
 
-    model_config = ConfigDict(from_attributes=True) 
+    model_config = ConfigDict(from_attributes=True)

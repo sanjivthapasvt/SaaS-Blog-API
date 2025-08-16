@@ -1,10 +1,13 @@
 import alembic.config
 
+
 def run_migration():
     alembicArgs = [
-        '--raiseerr',
-        'upgrade', 'head',
+        "--raiseerr",
+        "upgrade",
+        "head",
     ]
     alembic.config.main(argv=alembicArgs)
+
 
 run_migration()

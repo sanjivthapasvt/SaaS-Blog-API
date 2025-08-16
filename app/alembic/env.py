@@ -1,14 +1,13 @@
+import os
+import sys
 from logging.config import fileConfig
+
+from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
 
 from alembic import context
 
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -23,11 +22,12 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-#imports 
-from app.blogs.models import Blog, BlogTagLink, Tag, Comment
-from app.users.models import User, UserFollowLink
+# imports
+from app.blogs.models import Blog, BlogTagLink, Comment, Tag
 from app.models.blog_like_link import BlogLikeLink
 from app.notifications.models import Notification
+from app.users.models import User, UserFollowLink
+
 target_metadata = SQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -77,12 +77,11 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            render_as_batch=True  # ⬅️ Enables batch mode for SQLite
+            render_as_batch=True,  # ⬅️ Enables batch mode for SQLite
         )
 
         with context.begin_transaction():
             context.run_migrations()
-
 
 
 if context.is_offline_mode():

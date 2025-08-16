@@ -1,10 +1,13 @@
 from datetime import datetime
+
 from pydantic import BaseModel
+
 
 class UserRead(BaseModel):
     id: int
     full_name: str
     profile_pic: str | None
+
 
 class CurrentUserRead(BaseModel):
     id: int
@@ -13,6 +16,7 @@ class CurrentUserRead(BaseModel):
     profile_pic: str | None
     email: str | None
     joined_at: datetime
+
 
 class UserChangePassword(BaseModel):
     current_password: str

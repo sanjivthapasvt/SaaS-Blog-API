@@ -1,21 +1,21 @@
-from contextlib import asynccontextmanager
 import os
+from contextlib import asynccontextmanager
+
+import redis.asyncio as redis
 from dotenv import load_dotenv
+from fakeredis import FakeAsyncRedis
 from fastapi import FastAPI
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.database import init_db
-from app.auth.routes import router as auth_router
+from fastapi.staticfiles import StaticFiles
+from fastapi_limiter import FastAPILimiter
+
 from app.auth.google_auth import router as google_auth_router
-from app.blogs.routes import router as blog_router
+from app.auth.routes import router as auth_router
 from app.blogs.comment_routes import router as comment_router
+from app.blogs.routes import router as blog_router
+from app.core.database import init_db
 from app.notifications.routes import router as notification_router
 from app.users.routes import router as users_router
-from fastapi_limiter import FastAPILimiter
-import redis.asyncio as redis
-
-from fakeredis import FakeAsyncRedis
 
 load_dotenv()
 
@@ -24,23 +24,19 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     redis_connection = redis.from_url("redis://localhost:6379", encoding="utf8")
     testing = os.environ.get("TESTING") == "1"
-    
+
     if testing:
         redis_connection = FakeAsyncRedis()
-    
+
     await FastAPILimiter.init(redis_connection)
     await init_db()
     yield
     await redis_connection.aclose()
 
-    
+
 app = FastAPI(lifespan=lifespan)
 
-origins = [
-    "http://localhost:8000",
-    "http://localhost:3000",
-    "http://localhost:5173"
-]
+origins = ["http://localhost:8000", "http://localhost:3000", "http://localhost:5173"]
 
 app.add_middleware(
     CORSMiddleware,
