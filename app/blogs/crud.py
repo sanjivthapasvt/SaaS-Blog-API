@@ -44,8 +44,8 @@ async def create_new_blog(
 
     # listing followers of current user to create notification for them
     followers = await session.execute(
-        select(UserFollowLink.following_id).where(
-            UserFollowLink.follower_id == current_user.id
+        select(UserFollowLink.follower_id).where(
+            UserFollowLink.following_id == current_user.id
         )
     )
     followers_result = followers.scalars().all()
