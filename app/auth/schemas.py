@@ -1,5 +1,6 @@
 from typing import Annotated
-from pydantic import EmailStr, constr, BaseModel
+
+from pydantic import BaseModel, EmailStr, constr
 from sqlmodel import SQLModel
 
 
@@ -23,4 +24,5 @@ class UserRead(BaseModel):
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str

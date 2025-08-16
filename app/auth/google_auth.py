@@ -8,7 +8,7 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from app.auth.auth import create_access_token
+from app.auth.jwt_handler import create_access_token
 from app.core.database import get_session
 from app.users.models import User
 
