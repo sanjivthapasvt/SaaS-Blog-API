@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Form, Query, UploadFile
 from fastapi.exceptions import HTTPException
 from app.blogs.crud import get_user_blogs
+from app.blogs.schema import BlogResponse
 from app.users.models import User
 from app.core.database import AsyncSession, get_session
 from app.auth.auth import get_current_user
@@ -77,7 +78,24 @@ async def list_current_user_blog_route(
     current_user: UserRead = Depends(get_current_user)
 ):
     try:
-        return await get_user_blogs(session=session, search=search, limit=limit, offset=offset, user_id=current_user.id)
+        blogs_result, total_result =  await get_user_blogs(session=session, search=search, limit=limit, offset=offset, user_id=current_user.id)
+
+        data = [
+            BlogResponse.model_validate(
+                blog.model_copy(update={
+                    "tags": [tag.title for tag in blog.tags]
+                })
+            )
+            for blog in blogs_result
+        ]
+
+        return PaginatedResponse[BlogResponse](
+            total=total_result,
+            limit=limit,
+            offset=offset,
+            data=data
+        )
+    
     except HTTPException:
         raise
     except Exception as e:
@@ -183,7 +201,30 @@ async def list_user_blog_route(
     session: AsyncSession = Depends(get_session),
 ):
     try:
-        return await get_user_blogs(session=session, search=search, limit=limit, offset=offset, user_id=user_id)
+        blogs_result, total_result =  await get_user_blogs(
+            session=session, 
+            search=search, 
+            limit=limit, 
+            offset=offset, 
+            user_id=user_id
+        )
+    
+        data = [
+            BlogResponse.model_validate(
+                blog.model_copy(update={
+                    "tags": [tag.title for tag in blog.tags]
+                })
+            )
+            for blog in blogs_result
+        ]
+
+        return PaginatedResponse[BlogResponse](
+            total=total_result,
+            limit=limit,
+            offset=offset,
+            data=data
+        )
+    
     except HTTPException:
         raise
     except Exception as e:
