@@ -1,26 +1,11 @@
 import pytest
-from uuid import uuid4
 from httpx import AsyncClient
+from tests.auth_utils import _create_user, _login_user
 
-async def _auth_header(client: AsyncClient) -> dict[str, str]:
-    unique = uuid4().hex[:8]
-    reg = await client.post(
-        "/auth/register",
-        json={
-            "username": f"blogger_{unique}",
-            "first_name": "Blog",
-            "last_name": "Ger",
-            "email": f"blogger_{unique}@example.com",
-            "password": "secret123",
-        },
-    )
-    assert reg.status_code == 200, reg.text
-    token = reg.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
 
 @pytest.mark.asyncio
 async def test_get_all_notifications_empty(client: AsyncClient):
-    header = await _auth_header(client)
+    header = await _create_user(client, "test_user3")
     resp = await client.get("/api/notifications", headers=header)
     assert resp.status_code == 200
     data = resp.json()
@@ -30,10 +15,12 @@ async def test_get_all_notifications_empty(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_like_blogs_to_create_notification_and_get_notification(client: AsyncClient):
-    headers1 = await _auth_header(client)
-    headers2 = await _auth_header(client)
-    
+async def test_like_blogs_to_create_notification_and_get_notification(
+    client: AsyncClient,
+):
+    headers1 = await _create_user(client, "testuser4")
+    headers2 = await _create_user(client, "testuser5")
+
     # create a blog
     resp = await client.post(
         "/api/blogs",
@@ -74,3 +61,4 @@ async def test_like_blogs_to_create_notification_and_get_notification(client: As
     assert set(data.keys()) == {"total", "limit", "offset", "data"}
     assert data["total"] == 1
     assert isinstance(data["data"], list)
+
