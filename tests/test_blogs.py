@@ -108,3 +108,5 @@ async def test_like_unlike_and_liked_blogs(client: AsyncClient):
     assert resp6.status_code == 200
     liked = resp6.json()
     assert liked["total"] == 0
+
+
