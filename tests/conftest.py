@@ -1,10 +1,9 @@
 import os
-from unittest.mock import AsyncMock, patch
-
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
+                                    create_async_engine)
 from sqlmodel import SQLModel
 
 from app.core.database import get_session

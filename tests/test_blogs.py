@@ -3,6 +3,7 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 
+from tests.auth_utils import _create_user, _login_user
 
 async def _auth_header(client: AsyncClient) -> dict[str, str]:
     unique = uuid4().hex[:8]
@@ -109,4 +110,48 @@ async def test_like_unlike_and_liked_blogs(client: AsyncClient):
     liked = resp6.json()
     assert liked["total"] == 0
 
+@pytest.mark.asyncio
+async def test_get_liked_blogs(client: AsyncClient):
+    headers = await _auth_header(client)
 
+    resp = await client.post(
+        "/api/blogs",
+        data={
+            "title": "Hope you get notification",
+            "content": "This is test for getting notification sheesh",
+        },
+        headers=headers,
+    )
+    res = await client.post("/api/blogs/1/like", headers=headers)
+    assert res.status_code == 200
+    
+    resp = await client.get("/api/blogs/liked", headers=headers)
+    assert resp.status_code == 200
+    
+    data = resp.json()
+    assert set(data.keys()) == {"total", "limit", "offset", "data"}
+    assert data["total"] == 1
+    assert isinstance(data["data"], list)
+    assert set(data["data"][0].keys()) == {"id", "title", "thumbnail_url", "author", "tags", "created_at"}
+
+@pytest.mark.asyncio
+async def test_delete_blog(client: AsyncClient):
+    await _create_user(client, "test_delete_blog_user")
+    headers =  await _login_user(client, "test_delete_blog_user")
+
+    resp = await client.post(
+        "/api/blogs",
+        data={
+            "title": "Delete blog test",
+            "content": "This is test for getting notification sheesh",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 201
+    
+    get_resp = await client.get("/api/blogs?search=Delete%blog%test")
+    get_data = get_resp.json()["data"]
+    blog_id = get_data[0]["id"]
+    
+    del_resp = await client.delete(f"/api/blogs/{blog_id}", headers=headers)
+    assert del_resp.status_code == 200
