@@ -185,7 +185,7 @@ async def get_specefic_blog_route(
 
 
 @router.patch(
-    "/blogs/{blogs_id}",
+    "/blogs/{blog_id}",
     dependencies=[
         Depends(RateLimiter(times=10, minutes=1, identifier=user_identifier))
     ],
