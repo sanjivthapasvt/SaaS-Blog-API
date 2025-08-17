@@ -138,8 +138,8 @@ async def auth_google(code: str, session: AsyncSession = Depends(get_session)):
         access_token = create_access_token({"sub": user.google_id})
         refresh_token = create_refresh_token({"sub": user.google_id})
         return {
-            "access_token":access_token , 
-            "refresh_token": refresh_token, 
+            "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer"
         }
 

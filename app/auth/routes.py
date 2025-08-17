@@ -8,12 +8,8 @@ from sqlmodel import select
 
 from app.auth.dependency import get_user_by_identifier
 from app.auth.hashing import hash_password, verify_password
-from app.auth.jwt_handler import (
-    bearer_scheme,
-    create_access_token,
-    create_refresh_token,
-    decode_token,
-)
+from app.auth.jwt_handler import (bearer_scheme, create_access_token,
+                                  create_refresh_token, decode_token)
 from app.auth.schemas import Token, UserCreate, UserLogin
 from app.auth.security import TokenBlacklist, get_token_blacklist
 from app.core.database import get_session

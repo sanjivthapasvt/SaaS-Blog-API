@@ -7,16 +7,9 @@ from app.blogs.crud import get_user_blogs
 from app.blogs.schema import BlogResponse
 from app.core.database import AsyncSession, get_session
 from app.models.schema import PaginatedResponse
-from app.users.crud import (
-    change_user_password,
-    follow_user,
-    get_user_info,
-    list_followers,
-    list_followings,
-    list_users,
-    unfollow_user,
-    update_user_profile,
-)
+from app.users.crud import (change_user_password, follow_user, get_user_info,
+                            list_followers, list_followings, list_users,
+                            unfollow_user, update_user_profile)
 from app.users.models import User
 from app.users.schema import CurrentUserRead, UserChangePassword, UserRead
 from app.utils.rate_limiter import user_identifier

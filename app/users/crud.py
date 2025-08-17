@@ -4,7 +4,8 @@ from sqlmodel import func, select
 
 from app.auth.hashing import hash_password, verify_password
 from app.notifications.models import Notification
-from app.notifications.notification_service import NotificationType, create_notfication
+from app.notifications.notification_service import (NotificationType,
+                                                    create_notfication)
 from app.users.models import User, UserFollowLink
 from app.users.schema import CurrentUserRead
 from app.utils.remove_image import remove_image
