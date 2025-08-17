@@ -155,3 +155,39 @@ async def test_delete_blog(client: AsyncClient):
     
     del_resp = await client.delete(f"/api/blogs/{blog_id}", headers=headers)
     assert del_resp.status_code == 200
+
+@pytest.mark.asyncio
+async def test_update_blog(client: AsyncClient):
+    headers =  await _login_user(client, "test_delete_blog_user")
+
+    resp = await client.post(
+        "/api/blogs",
+        data={
+            "title": "This is to be updated",
+            "content": "This is test for updating blog",
+        },
+        headers=headers,
+    )
+    
+    assert resp.status_code == 201
+    
+    get_resp = await client.get("/api/blogs?search=updated")
+    get_data = get_resp.json()["data"]
+    blog_id = get_data[0]["id"]
+    
+    with open("tests/test1.png", "rb") as f:
+        data = {
+            "title": "the blog that needs to be updated has been updated",
+            "content": "you are seeing the blog that has been updated"
+        }
+        files = {"thumbnail": ("first.png", f, "image/png")}
+        update_resp = await client.patch(f"/api/blogs/{blog_id}",data=data,files=files, headers=headers)
+        assert update_resp.status_code == 200
+    
+    updated_resp = await client.get(f"/api/blogs/{blog_id}")
+    assert updated_resp.status_code == 200
+    
+    updated_data = updated_resp.json()
+
+    assert updated_data["title"] == "the blog that needs to be updated has been updated"
+    assert updated_data["content"] == "you are seeing the blog that has been updated"
