@@ -1,16 +1,14 @@
 from typing import Annotated
 
-from pydantic import BaseModel, EmailStr, constr
-from sqlmodel import SQLModel
+from pydantic import BaseModel, EmailStr, StringConstraints
 
 
-class UserCreate(SQLModel):
-    username: Annotated[str, constr(min_length=3, max_length=50)]
-    first_name: Annotated[str, constr(min_length=3, max_length=20)]
-    last_name: Annotated[str, constr(min_length=3, max_length=25)]
+class UserCreate(BaseModel):
+    username: Annotated[str, StringConstraints(min_length=3, max_length=50)]
+    first_name: Annotated[str, StringConstraints(min_length=3, max_length=20)]
+    last_name: Annotated[str, StringConstraints(min_length=3, max_length=25)]
     email: EmailStr
-    password: Annotated[str, constr(min_length=6, max_length=250)]
-
+    password: Annotated[str, StringConstraints(min_length=8, max_length=250)]
 
 class UserLogin(BaseModel):
     username: str
