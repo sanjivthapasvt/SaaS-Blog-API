@@ -194,7 +194,7 @@ async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
 
 
 async def get_liked_blogs(
-    session: AsyncSession, search: str, limit: int, offset: int, user_id: int
+    session: AsyncSession, search: str | None, limit: int, offset: int, user_id: int
 ):
     """
     Retrieve paginated blogs liked by a user, optionally filtered by a search term.

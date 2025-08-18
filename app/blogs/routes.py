@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, Query, UploadFile
+from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from fastapi_limiter.depends import RateLimiter
@@ -10,14 +10,16 @@ from app.blogs.crud import (create_new_blog, delete_blog, get_all_blogs,
                             update_blog)
 from app.blogs.schema import BlogContentResponse, BlogResponse
 from app.core.database import get_session
-from app.models.schema import PaginatedResponse
+from app.models.schema import PaginatedResponse, CommonParams
 from app.users.schema import CurrentUserRead
 from app.utils.rate_limiter import user_identifier
 from app.utils.save_image import save_image
+from app.utils.common_params import get_common_params
 
 router = APIRouter()
 
 thumbnail_path: str = "blogs/thumbnail"
+
 
 
 @router.post(
@@ -92,15 +94,13 @@ async def like_blog_route(
     ],
 )
 async def get_all_blogs_route(
-    search: str = Query(default=None),
-    limit: int = Query(10, ge=1),
-    offset: int = Query(0, ge=0),
+    params:CommonParams = Depends(get_common_params),
     session: AsyncSession = Depends(get_session),
 ):
     """Retrieve all blogs with optional search and pagination."""
     try:
         blogs_result, total_result = await get_all_blogs(
-            session=session, search=search, limit=limit, offset=offset
+            session=session, search=params.search, limit=params.limit, offset=params.offset
         )
         # validates response and set tags as list of strings
         data = [
@@ -111,7 +111,7 @@ async def get_all_blogs_route(
         ]
 
         return PaginatedResponse[BlogResponse](
-            total=total_result, limit=limit, offset=offset, data=data
+            total=total_result, limit=params.limit, offset=params.offset, data=data
         )
 
     except HTTPException:
@@ -131,9 +131,7 @@ async def get_all_blogs_route(
     ],
 )
 async def get_liked_blog_route(
-    search: str = Query(default=None),
-    limit: int = Query(10, ge=1),
-    offset: int = Query(0, ge=0),
+    params: CommonParams = Depends(get_common_params),
     current_user: CurrentUserRead = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
@@ -141,9 +139,9 @@ async def get_liked_blog_route(
     try:
         blogs_result, total_result = await get_liked_blogs(
             session=session,
-            search=search,
-            limit=limit,
-            offset=offset,
+            search=params.search,
+            limit=params.limit,
+            offset=params.offset,
             user_id=current_user.id,
         )
 
@@ -155,7 +153,7 @@ async def get_liked_blog_route(
         ]
 
         return PaginatedResponse[BlogResponse](
-            total=total_result, limit=limit, offset=offset, data=data
+            total=total_result, limit=params.limit, offset=params.offset, data=data
         )
 
     except Exception as e:
