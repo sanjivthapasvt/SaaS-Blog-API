@@ -10,3 +10,8 @@ class PaginatedResponse(BaseModel, Generic[T]):
     limit: int
     offset: int
     data: List[T]
+
+class CommonParams(BaseModel):
+    search:str | None
+    limit: int
+    offset: int

@@ -5,9 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependency import get_current_user
 from app.auth.schemas import UserRead
 from app.core.database import get_session
-from app.models.schema import PaginatedResponse
+from app.models.schema import CommonParams, PaginatedResponse
 from app.notifications.crud import get_notifications, mark_notification_as_read
 from app.notifications.schema import NotificationResponse
+from app.utils.common_params import get_common_params
 from app.utils.rate_limiter import user_identifier
 
 router = APIRouter()
@@ -21,25 +22,23 @@ router = APIRouter()
     ],
 )
 async def get_notifications_route(
-    search: str | None = Query(default=None),
-    limit: int = Query(10, ge=1),
-    offset: int = Query(0, ge=0),
+    params: CommonParams = Depends(get_common_params),
     session: AsyncSession = Depends(get_session),
     current_user: UserRead = Depends(get_current_user),
 ):
     try:
         notifications_result, total_result = await get_notifications(
             session=session,
-            search=search,
-            limit=limit,
-            offset=offset,
+            search=params.search,
+            limit=params.limit,
+            offset=params.offset,
             current_user=current_user.id,
         )
 
         return PaginatedResponse[NotificationResponse](
             total=total_result,
-            limit=limit,
-            offset=offset,
+            limit=params.limit,
+            offset=params.offset,
             data=[
                 NotificationResponse.model_validate(obj) for obj in notifications_result
             ],

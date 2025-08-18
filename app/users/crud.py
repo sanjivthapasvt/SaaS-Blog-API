@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, select
 
 from app.auth.hashing import hash_password, verify_password
+from app.auth.security import check_password_strength
 from app.notifications.models import Notification
 from app.notifications.notification_service import (NotificationType,
                                                     create_notfication)
@@ -35,10 +36,10 @@ async def change_user_password(
                 status_code=400, detail="Your old password doesn't match"
             )
 
-    if len(new_password) < 6:
-        raise HTTPException(
-            status_code=400, detail="Password length must be greater than 6"
-        )
+
+    strong, reasons = check_password_strength(new_password)
+    if not strong:
+        raise HTTPException(status_code=400, detail={"password": new_password, "reasons": reasons}) 
 
     if new_password != again_new_password:
         raise HTTPException(status_code=400, detail="New passwords doesn't match")
@@ -76,7 +77,7 @@ async def update_user_profile(
     await session.refresh(current_user)
 
 
-async def list_users(search: str, limit: int, offset: int, session: AsyncSession):
+async def list_users(search: str | None, limit: int, offset: int, session: AsyncSession):
     query = select(User)
     total_query = select(func.count()).select_from(User)
 
@@ -99,7 +100,7 @@ async def list_users(search: str, limit: int, offset: int, session: AsyncSession
 
 
 async def list_followers(
-    user_id: int, search: str, limit: int, offset: int, session: AsyncSession
+    user_id: int, search: str | None, limit: int, offset: int, session: AsyncSession
 ):
     raw_followers = await session.execute(
         select(UserFollowLink.follower_id)
@@ -135,7 +136,7 @@ async def list_followers(
 
 
 async def list_followings(
-    user_id: int, search: str, limit: int, offset: int, session: AsyncSession
+    user_id: int, search: str | None, limit: int, offset: int, session: AsyncSession
 ):
     raw_followings = await session.execute(
         select(UserFollowLink.following_id)

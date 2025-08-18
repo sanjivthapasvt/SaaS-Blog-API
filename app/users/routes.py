@@ -6,13 +6,15 @@ from app.auth.dependency import get_current_user
 from app.blogs.crud import get_user_blogs
 from app.blogs.schema import BlogResponse
 from app.core.database import AsyncSession, get_session
-from app.models.schema import PaginatedResponse
+from app.models.schema import PaginatedResponse, CommonParams
 from app.users.crud import (change_user_password, follow_user, get_user_info,
                             list_followers, list_followings, list_users,
                             unfollow_user, update_user_profile)
 from app.users.models import User
 from app.users.schema import CurrentUserRead, UserChangePassword, UserRead
 from app.utils.rate_limiter import user_identifier
+from app.utils.common_params import get_common_params
+
 
 router = APIRouter()
 
@@ -98,18 +100,16 @@ async def change_password_route(
     ],
 )
 async def list_current_user_blog_route(
-    search: str | None = Query(default=None),
-    limit: int = Query(10, ge=1),
-    offset: int = Query(0, ge=0),
+    params: CommonParams = Depends(get_common_params),
     session: AsyncSession = Depends(get_session),
     current_user: UserRead = Depends(get_current_user),
 ):
     try:
         blogs_result, total_result = await get_user_blogs(
             session=session,
-            search=search,
-            limit=limit,
-            offset=offset,
+            search=params.search,
+            limit=params.limit,
+            offset=params.offset,
             user_id=current_user.id,
         )
 
@@ -121,7 +121,7 @@ async def list_current_user_blog_route(
         ]
 
         return PaginatedResponse[BlogResponse](
-            total=total_result, limit=limit, offset=offset, data=data
+            total=total_result, limit=params.limit, offset=params.offset, data=data
         )
 
     except HTTPException:
@@ -144,14 +144,12 @@ async def list_current_user_blog_route(
     ],
 )
 async def list_users_route(
-    search: str = Query(default=None),
-    limit: int = Query(15, ge=1),
-    offset: int = Query(0, ge=0),
+    params: CommonParams = Depends(get_common_params),
     session: AsyncSession = Depends(get_session),
 ):
     try:
         return await list_users(
-            session=session, search=search, limit=limit, offset=offset
+            session=session, search=params.search, limit=params.limit, offset=params.offset
         )
     except HTTPException:
         raise
@@ -169,14 +167,12 @@ async def list_users_route(
 )
 async def list_followers_route(
     user_id: int,
-    search: str = Query(default=None),
-    limit: int = Query(15, ge=1),
-    offset: int = Query(0, ge=0),
+    params: CommonParams = Depends(get_common_params),
     session: AsyncSession = Depends(get_session),
 ):
     try:
         return await list_followers(
-            session=session, user_id=user_id, search=search, limit=limit, offset=offset
+            session=session, user_id=user_id, search=params.search, limit=params.limit, offset=params.offset
         )
     except HTTPException:
         raise
@@ -197,14 +193,12 @@ async def list_followers_route(
 )
 async def list_followings_route(
     user_id: int,
-    search: str = Query(default=None),
-    limit: int = Query(15, ge=1),
-    offset: int = Query(0, ge=0),
+    params: CommonParams = Depends(get_common_params),
     session: AsyncSession = Depends(get_session),
 ):
     try:
         return await list_followings(
-            session=session, user_id=user_id, search=search, limit=limit, offset=offset
+            session=session, user_id=user_id, search=params.search, limit=params.limit, offset=params.offset
         )
     except HTTPException:
         raise
@@ -273,14 +267,12 @@ async def unfollow_user_route(
 )
 async def list_user_blog_route(
     user_id: int,
-    search: str | None = Query(default=None),
-    limit: int = Query(10, ge=1),
-    offset: int = Query(0, ge=0),
+    params: CommonParams = Depends(get_common_params),
     session: AsyncSession = Depends(get_session),
 ):
     try:
         blogs_result, total_result = await get_user_blogs(
-            session=session, search=search, limit=limit, offset=offset, user_id=user_id
+            session=session, search=params.search, limit=params.limit, offset=params.offset, user_id=user_id
         )
 
         data = [
@@ -291,7 +283,7 @@ async def list_user_blog_route(
         ]
 
         return PaginatedResponse[BlogResponse](
-            total=total_result, limit=limit, offset=offset, data=data
+            total=total_result, limit=params.limit, offset=params.offset, data=data
         )
 
     except HTTPException:
