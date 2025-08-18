@@ -13,7 +13,7 @@ async def _auth_header(client: AsyncClient) -> dict[str, str]:
             "first_name": "Blog",
             "last_name": "Ger",
             "email": f"blogger_{unique}@example.com",
-            "password": "secret123",
+            "password": "Secret123@",
         },
     )
     assert reg.status_code == 200, reg.text
@@ -89,9 +89,9 @@ async def test_user_change_password(client: AsyncClient):
     resp = await client.post(
         "/api/users/me/password",
         json={
-            "current_password": "secret123",
-            "new_password": "secret1234",
-            "again_new_password": "secret1234",
+            "current_password": "Secret123@",
+            "new_password": "Secret123@4",
+            "again_new_password": "Secret123@4",
         },
         headers=headers,
     )
@@ -104,7 +104,7 @@ async def test_user_change_password(client: AsyncClient):
 
     # try to login with old password
     resp3 = await client.post(
-        "/auth/login", json={"username": username, "password": "secret123"}
+        "/auth/login", json={"username": username, "password": "Secret123@"}
     )
     data1 = resp3.json()
     assert resp3.status_code == 400
@@ -112,7 +112,7 @@ async def test_user_change_password(client: AsyncClient):
 
     # try to login with new password
     resp4 = await client.post(
-        "/auth/login", json={"username": username, "password": "secret1234"}
+        "/auth/login", json={"username": username, "password": "Secret123@4"}
     )
     assert resp4.status_code == 200
     data2 = resp4.json()

@@ -24,7 +24,7 @@ async def _login_user(client: AsyncClient, username: str) -> dict[str, str]:
         "/auth/login",
         json={
             "username": f"{username}",
-            "password": "secret123",
+            "password": "SecretPassword1#",
         },
     )
     assert log.status_code == 200, log.text
@@ -41,7 +41,7 @@ async def _unique_auth_header(client: AsyncClient) -> dict[str, str]:
             "first_name": "Blog",
             "last_name": "Ger",
             "email": f"blogger_{unique}@example.com",
-            "password": "secret123",
+            "password": "SecretPassword1#",
         },
     )
     assert reg.status_code == 200, reg.text

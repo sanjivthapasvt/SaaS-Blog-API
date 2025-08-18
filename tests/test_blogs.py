@@ -14,7 +14,7 @@ async def _auth_header(client: AsyncClient) -> dict[str, str]:
             "first_name": "Blog",
             "last_name": "Ger",
             "email": f"blogger_{unique}@example.com",
-            "password": "secret123",
+            "password": "Secret123@",
         },
     )
     assert reg.status_code == 200, reg.text
