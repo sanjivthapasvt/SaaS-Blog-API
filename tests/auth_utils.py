@@ -11,7 +11,7 @@ async def _create_user(client: AsyncClient, username: str) -> dict[str, str]:
             "first_name": "Blog",
             "last_name": "Ger",
             "email": f"{username}@example.com",
-            "password": "secret123",
+            "password": "SecretPassword1#",
         },
     )
     assert reg.status_code == 200, reg.text
