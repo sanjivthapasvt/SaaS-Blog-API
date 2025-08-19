@@ -29,7 +29,7 @@ thumbnail_path: str = "blogs/thumbnail"
     ],
 )
 async def create_blog_route(
-    title: str = Form(...),
+    title: str = Form(..., max_length=500),
     content: str = Form(...),
     tags: str | None = Form(None),
     thumbnail: UploadFile | None = None,
@@ -68,7 +68,7 @@ async def create_blog_route(
         Depends(RateLimiter(times=20, minutes=1, identifier=user_identifier))
     ],
 )
-async def like_blog_route(
+async def like_unlike_blog_route(
     blog_id: int,
     current_user: CurrentUserRead = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -198,7 +198,7 @@ async def update_blog_route(
 ):
     """Update a blog post's title, content, or thumbnail."""
     try:
-        updated_blog = await update_blog(
+        await update_blog(
             session=session,
             blog_id=blog_id,
             title=title,

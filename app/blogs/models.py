@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import Column, Field, Relationship, SQLModel, Text
 
@@ -10,13 +10,13 @@ if TYPE_CHECKING:
 
 
 class BlogTagLink(SQLModel, table=True):
-    blog_id: int | None = Field(default=None, foreign_key="blog.id", primary_key=True)
-    tag_id: int | None = Field(default=None, foreign_key="tag.id", primary_key=True)
+    blog_id: Optional[int] = Field(default=None, foreign_key="blog.id", primary_key=True)
+    tag_id: Optional[int] = Field(default=None, foreign_key="tag.id", primary_key=True)
 
 
 class Blog(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    title: str = Field(index=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str = Field(index=True, max_length=500)
     thumbnail_url: str | None = Field(default=None)
     content: str = Field(sa_column=Column(Text))
     author: int = Field(foreign_key="user.id")
@@ -30,19 +30,19 @@ class Blog(SQLModel, table=True):
 
 
 class Tag(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    title: str | None = Field(default=None, unique=True, index=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: Optional[str] = Field(default=None, unique=True, index=True)
     blogs: list[Blog] = Relationship(back_populates="tags", link_model=BlogTagLink)
 
 
 class Comment(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     content: str = Field(sa_column=Column(Text))
     commented_by: int | None = Field(default=None, foreign_key="user.id")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True)
     last_modified: datetime | None = Field(default=None)
-    blog_id: int | None = Field(default=None, foreign_key="blog.id")
-    blog: Blog | None = Relationship(back_populates="comments")
+    blog_id: int = Field(foreign_key="blog.id", index=True)
+    blog: Optional[Blog] = Relationship(back_populates="comments")
 
 
 # to resolve string references for type checking

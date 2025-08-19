@@ -4,7 +4,7 @@ from app.notifications.models import Notification, NotificationType
 from app.utils.logger import logger
 
 
-async def create_notfication(
+async def create_notification(
     owner_id: int,
     triggered_by_user_id: int,
     message: str,

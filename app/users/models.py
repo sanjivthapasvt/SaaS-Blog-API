@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 from sqlmodel import Column, Field, Relationship, SQLModel, Text
 
@@ -10,27 +10,27 @@ if TYPE_CHECKING:
 
 
 class UserFollowLink(SQLModel, table=True):
-    follower_id: int | None = Field(
+    follower_id: Optional[int] = Field(
         default=None, foreign_key="user.id", primary_key=True
     )
-    following_id: int | None = Field(
+    following_id: Optional[int] = Field(
         default=None, foreign_key="user.id", primary_key=True
     )
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class User(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    profile_pic: str | None = Field(
+    id: Optional[int] = Field(default=None, primary_key=True)
+    profile_pic: Optional[str] = Field(
         default=None,
     )
-    google_id: str | None = Field(default=None, unique=True, index=True)
-    username: str | None = Field(unique=True, index=True, max_length=50)
+    google_id: Optional[str] = Field(default=None, unique=True, index=True)
+    username: Optional[str] = Field(unique=True, index=True, max_length=50)
     email: str = Field(unique=True, index=True)
     full_name: str = Field(default=None)
-    bio: str | None = Field(default=None, sa_column=Column(Text))
+    bio: Optional[str] = Field(default=None, sa_column=Column(Text))
     joined_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    hashed_password: str | None = None
+    hashed_password: Optional[str] = None
     is_active: bool = Field(default=True)
 
     liked_blogs: list["Blog"] = Relationship(

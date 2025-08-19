@@ -1,7 +1,58 @@
+from datetime import datetime
 from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
+
+from tests.auth_utils import _create_user
+from tests.schema.global_schema import PaginatedResponse
+from tests.schema.user_schema import CurrentUserRead, UserRead
+from tests.blogs.test_blogs_crud import validate_response
+
+
+class TestUserEndpointValidation:
+    """Test user-related endpoints with validation"""
+
+    @pytest.mark.asyncio
+    async def test_current_user_info_validation(self, client: AsyncClient):
+        """Test current user info endpoint with validation"""
+        headers = await _create_user(client, "CurrentUserValidation")
+
+        resp = await client.get("/api/users/me", headers=headers)
+        assert resp.status_code == 200
+
+        validated_user = validate_response(resp.json(), CurrentUserRead)
+        assert isinstance(validated_user.id, int)
+        assert (
+            validated_user.username is not None
+        )  # Should have username after creation
+        assert validated_user.full_name is not None
+        assert isinstance(validated_user.joined_at, datetime)
+        # profile_pic and email can be None
+        assert validated_user.profile_pic is None or isinstance(
+            validated_user.profile_pic, str
+        )
+        assert validated_user.email is None or isinstance(validated_user.email, str)
+
+    @pytest.mark.asyncio
+    async def test_list_users_validation(self, client: AsyncClient):
+        """Test listing users with response validation"""
+        headers = await _create_user(client, "ListUsersValidation")
+
+        resp = await client.get("/api/users", headers=headers)
+        assert resp.status_code == 200
+
+        validated_response = validate_response(resp.json(), PaginatedResponse[UserRead])
+        assert validated_response.total >= 1  # At least the user we created
+        assert isinstance(validated_response.limit, int)
+        assert isinstance(validated_response.offset, int)
+        assert len(validated_response.data) >= 1
+
+        # Validate user structure
+        for user in validated_response.data:
+            assert isinstance(user.id, int)
+            assert isinstance(user.full_name, str)
+            assert user.profile_pic is None or isinstance(user.profile_pic, str)
 
 
 async def _auth_header(client: AsyncClient) -> dict[str, str]:
