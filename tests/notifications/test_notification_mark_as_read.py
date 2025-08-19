@@ -23,7 +23,7 @@ class TestNotificationMarkAsRead:
 
         blogs_resp = await client.get("/api/blogs?search=Mark%Read")
         blog_id = blogs_resp.json()["data"][0]["id"]
-        
+
         await client.post(f"/api/blogs/{blog_id}/like", headers=liker_headers)
 
         # Get notification ID
@@ -32,8 +32,7 @@ class TestNotificationMarkAsRead:
 
         # Mark as read
         mark_read_resp = await client.post(
-            f"/api/notifications/{notification_id}/mark_as_read",
-            headers=author_headers
+            f"/api/notifications/{notification_id}/mark_as_read", headers=author_headers
         )
         assert mark_read_resp.status_code == 200
 
@@ -43,8 +42,7 @@ class TestNotificationMarkAsRead:
         headers = await _create_user(client, "NonExistentNotificationUser")
 
         mark_read_resp = await client.post(
-            "/api/notifications/99999/mark_as_read",
-            headers=headers
+            "/api/notifications/99999/mark_as_read", headers=headers
         )
         assert mark_read_resp.status_code == 404
 
@@ -58,14 +56,17 @@ class TestNotificationMarkAsRead:
         # User1 creates blog, User2 likes it (creates notification for User1)
         create_resp = await client.post(
             "/api/blogs",
-            data={"title": "Other User Notification", "content": "Test unauthorized read"},
+            data={
+                "title": "Other User Notification",
+                "content": "Test unauthorized read",
+            },
             headers=user1_headers,
         )
         assert create_resp.status_code == 201
 
         blogs_resp = await client.get("/api/blogs?search=Other%User")
         blog_id = blogs_resp.json()["data"][0]["id"]
-        
+
         await client.post(f"/api/blogs/{blog_id}/like", headers=user2_headers)
 
         # Get notification ID (User1's notification)
@@ -74,13 +75,12 @@ class TestNotificationMarkAsRead:
 
         # User3 tries to mark User1's notification as read
         mark_read_resp = await client.post(
-            f"/api/notifications/{notification_id}/mark_as_read",
-            headers=user3_headers
+            f"/api/notifications/{notification_id}/mark_as_read", headers=user3_headers
         )
-        assert mark_read_resp.status_code in [403, 404]  # Forbidden or Not Found
+        assert mark_read_resp.status_code == 403
 
     @pytest.mark.asyncio
     async def test_mark_as_read_unauthorized(self, client: AsyncClient):
         """Test marking notification as read without authentication"""
         mark_read_resp = await client.post("/api/notifications/1/mark_as_read")
-        assert mark_read_resp.status_code == 401
+        assert mark_read_resp.status_code == 403

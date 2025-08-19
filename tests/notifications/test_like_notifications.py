@@ -4,7 +4,6 @@ from httpx import AsyncClient
 from tests.auth_utils import _create_user
 
 
-
 class TestLikeNotifications:
     """Test notifications for blog likes"""
 
@@ -26,22 +25,24 @@ class TestLikeNotifications:
         assert create_resp.status_code == 201
 
         # Get blog ID
-        blogs_resp = await client.get("/api/blogs?search=Likeable")
+        blogs_resp = await client.get("/api/blogs?search=Likeable%Blog")
         blog_id = blogs_resp.json()["data"][0]["id"]
 
         # Like the blog
-        like_resp = await client.post(f"/api/blogs/{blog_id}/like", headers=liker_headers)
+        like_resp = await client.post(
+            f"/api/blogs/{blog_id}/like", headers=liker_headers
+        )
         assert like_resp.status_code == 200
 
         # Check that author received notification
         notif_resp = await client.get("/api/notifications", headers=author_headers)
         assert notif_resp.status_code == 200
-        
+
         data = notif_resp.json()
         assert data["total"] == 1
-        
+
         notification = data["data"][0]
-        assert notification["notification_type"] == "like" 
+        assert notification["notification_type"] == "like"
         assert notification["blog_id"] == blog_id
         assert "triggered_by_user_id" in notification
 
@@ -63,19 +64,21 @@ class TestLikeNotifications:
         blog_id = blogs_resp.json()["data"][0]["id"]
 
         # Like and then unlike
-        await client.post(f"/api/blogs/{blog_id}/like", headers=liker_headers)  #Like 
-        await client.post(f"/api/blogs/{blog_id}/like", headers=liker_headers)  # Unlike 
+        await client.post(f"/api/blogs/{blog_id}/like", headers=liker_headers)  # Like
+        await client.post(f"/api/blogs/{blog_id}/like", headers=liker_headers)  # Unlike
 
         # Check notifications - should be empty
         notif_resp = await client.get("/api/notifications", headers=author_headers)
         assert notif_resp.status_code == 200
         data = notif_resp.json()
-        
-        #Notificatoin should be empty
+
+        # Notificatoin should be empty
         assert data["total"] == 0
 
     @pytest.mark.asyncio
-    async def test_multiple_likes_same_user_single_notification(self, client: AsyncClient):
+    async def test_multiple_likes_same_user_single_notification(
+        self, client: AsyncClient
+    ):
         """Test that multiple like/unlike don't create duplicate notifications"""
         author_headers = await _create_user(client, "MultiLikeAuthor")
         liker_headers = await _create_user(client, "MultiLiker")
@@ -93,8 +96,12 @@ class TestLikeNotifications:
 
         # Multiple like/unlike cycles
         for _ in range(3):
-            await client.post(f"/api/blogs/{blog_id}/like", headers=liker_headers)  # Like
-            await client.post(f"/api/blogs/{blog_id}/like", headers=liker_headers)  # Unlike
+            await client.post(
+                f"/api/blogs/{blog_id}/like", headers=liker_headers
+            )  # Like
+            await client.post(
+                f"/api/blogs/{blog_id}/like", headers=liker_headers
+            )  # Unlike
 
         # Final like
         await client.post(f"/api/blogs/{blog_id}/like", headers=liker_headers)
@@ -112,16 +119,18 @@ class TestLikeNotifications:
         # Create blog
         create_resp = await client.post(
             "/api/blogs",
-            data={"title": "Self Like Test", "content": "Author likes own blog"},
+            data={"title": "Dumb Author Self Like Test", "content": "Author likes own blog"},
             headers=author_headers,
         )
         assert create_resp.status_code == 201
 
-        blogs_resp = await client.get("/api/blogs?search=Self%Like")
+        blogs_resp = await client.get("/api/blogs?search=Dumb%Author")
         blog_id = blogs_resp.json()["data"][0]["id"]
 
         # Author tries to like own blog
-        like_resp = await client.post(f"/api/blogs/{blog_id}/like", headers=author_headers)
+        like_resp = await client.post(
+            f"/api/blogs/{blog_id}/like", headers=author_headers
+        )
 
         # Check notifications - author shouldn't get notification for own like
         notif_resp = await client.get("/api/notifications", headers=author_headers)

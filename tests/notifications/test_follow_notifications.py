@@ -47,7 +47,9 @@ class TestFollowNotifications:
         assert data2["total"] == 1
 
         # Check non-follower (should have no notifications)
-        notif3_resp = await client.get("/api/notifications", headers=non_follower_headers)
+        notif3_resp = await client.get(
+            "/api/notifications", headers=non_follower_headers
+        )
         assert notif3_resp.status_code == 200
         data3 = notif3_resp.json()
         assert data3["total"] == 0
