@@ -9,7 +9,7 @@ from sqlmodel import and_, col, func, insert, select, delete
 from app.blogs.models import Blog, BlogTagLink, Comment, Tag
 from app.models.blog_like_link import BlogLikeLink
 from app.notifications.models import Notification, NotificationType
-from app.notifications.notification_service import create_notfication
+from app.notifications.notification_service import create_notification
 from app.users.models import UserFollowLink
 from app.users.schema import CurrentUserRead
 from app.utils.remove_image import remove_image
@@ -148,7 +148,7 @@ async def like_unlike_blog(
 
         # create notification only if not self-like
         if current_user.id != blog.author:
-            await create_notfication(
+            await create_notification(
                 session=session,
                 owner_id=blog.author,
                 triggered_by_user_id=current_user.id,

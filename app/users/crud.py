@@ -6,7 +6,7 @@ from app.auth.hashing import hash_password, verify_password
 from app.auth.security import check_password_strength
 from app.notifications.models import Notification
 from app.notifications.notification_service import (NotificationType,
-                                                    create_notfication)
+                                                    create_notification)
 from app.users.models import User, UserFollowLink
 from app.users.schema import CurrentUserRead
 from app.utils.remove_image import remove_image
@@ -203,7 +203,7 @@ async def follow_user(
     )
 
     if not notification_result.scalars().first():
-        await create_notfication(
+        await create_notification(
             session=session,
             owner_id=target_user.id,  # type: ignore
             triggered_by_user_id=current_user.id,
