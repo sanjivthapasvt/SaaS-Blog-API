@@ -4,7 +4,7 @@ from aiosqlite import IntegrityError
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlmodel import func, insert, select
+from sqlmodel import and_, func, insert, select, delete
 
 from app.blogs.models import Blog, BlogTagLink, Comment, Tag
 from app.models.blog_like_link import BlogLikeLink
@@ -107,7 +107,24 @@ async def like_unlike_blog(
     existing_like = result.scalars().first()
 
     if existing_like:
+        blog = await session.get(Blog, blog_id)
+        
+        if not blog:
+            raise HTTPException(status_code=404, detail="Blog doesn't exist")
+        
         await session.delete(existing_like)
+        # Delete notification if not self-like
+        if current_user.id != blog.author:
+            await session.execute(
+                delete(Notification).where(
+                    and_(
+                        Notification.owner_id == blog.author,
+                        Notification.blog_id == blog.id,
+                        Notification.notification_type == NotificationType.LIKE,
+                        Notification.triggered_by_user_id == current_user.id
+                    )
+                )
+            )
         await session.commit()
         return {"detail": "removed from liked blogs"}
 
@@ -125,26 +142,14 @@ async def like_unlike_blog(
 
         # create notification only if not self-like
         if current_user.id != blog.author:
-            # check for existing notification
-            notification_result = await session.execute(
-                select(Notification).where(
-                    (Notification.owner_id == blog.author)
-                    & (Notification.blog_id == blog_id)
-                    & (Notification.notification_type == NotificationType.LIKE)
-                    & (Notification.triggered_by_user_id == current_user.id)
-                )
+            await create_notfication(
+                session=session,
+                owner_id=blog.author,
+                triggered_by_user_id=current_user.id,
+                blog_id=blog.id,
+                notification_type=NotificationType.LIKE,
+                message=f"{current_user.full_name} liked your blog {blog.title}",
             )
-
-            if not notification_result.scalars().first():
-                await create_notfication(
-                    session=session,
-                    owner_id=blog.author,
-                    triggered_by_user_id=current_user.id,
-                    blog_id=blog_id,
-                    notification_type=NotificationType.LIKE,
-                    message=f"{current_user.full_name} liked your blog {blog.title}",
-                )
-
         return {"detail": "added to liked blogs"}
 
     except IntegrityError:

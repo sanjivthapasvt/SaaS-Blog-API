@@ -68,7 +68,7 @@ async def create_blog_route(
         Depends(RateLimiter(times=20, minutes=1, identifier=user_identifier))
     ],
 )
-async def like_blog_route(
+async def like_unlike_blog_route(
     blog_id: int,
     current_user: CurrentUserRead = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
