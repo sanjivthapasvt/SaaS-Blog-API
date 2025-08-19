@@ -47,7 +47,7 @@ async def mark_notification_as_read(
 
     if not notification.owner_id == current_user:
         raise HTTPException(
-            status_code=401, detail="You are not the owner of the notification"
+            status_code=403, detail="You are not the owner of the notification"
         )
 
     if notification.is_read:
