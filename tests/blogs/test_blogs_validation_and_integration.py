@@ -216,8 +216,8 @@ class TestBlogIntegration:
             data={"title": "Hacked by User2"},
             headers=headers2,
         )
-        assert update_resp.status_code in [403, 404]
+        assert update_resp.status_code == 403
         
         # User2 cannot delete User1's blog
         delete_resp = await client.delete(f"/api/blogs/{blog_id}", headers=headers2)
-        assert delete_resp.status_code in [403, 404]
+        assert delete_resp.status_code == 403

@@ -16,7 +16,7 @@ class BlogTagLink(SQLModel, table=True):
 
 class Blog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    title: str = Field(index=True)
+    title: str = Field(index=True, max_length=500)
     thumbnail_url: str | None = Field(default=None)
     content: str = Field(sa_column=Column(Text))
     author: int = Field(foreign_key="user.id")

@@ -29,7 +29,7 @@ thumbnail_path: str = "blogs/thumbnail"
     ],
 )
 async def create_blog_route(
-    title: str = Form(...),
+    title: str = Form(..., max_length=500),
     content: str = Form(...),
     tags: str | None = Form(None),
     thumbnail: UploadFile | None = None,
