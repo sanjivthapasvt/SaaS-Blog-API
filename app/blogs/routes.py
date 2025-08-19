@@ -198,7 +198,7 @@ async def update_blog_route(
 ):
     """Update a blog post's title, content, or thumbnail."""
     try:
-        updated_blog = await update_blog(
+        await update_blog(
             session=session,
             blog_id=blog_id,
             title=title,

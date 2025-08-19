@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StringConstraints
 
 
 class BlogResponse(BaseModel):
@@ -28,6 +29,5 @@ class CommentData(BaseModel):
     commmented_by: int
     created_at: datetime
 
-
 class CommentWrite(BaseModel):
-    content: str
+    content: Annotated[str, StringConstraints(min_length=1, max_length=500)]
