@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from tests.auth_utils import _create_user
+from tests.utils.auth_utils import _create_user
 
 
 class TestLikeNotifications:
@@ -119,7 +119,10 @@ class TestLikeNotifications:
         # Create blog
         create_resp = await client.post(
             "/api/blogs",
-            data={"title": "Dumb Author Self Like Test", "content": "Author likes own blog"},
+            data={
+                "title": "Dumb Author Self Like Test",
+                "content": "Author likes own blog",
+            },
             headers=author_headers,
         )
         assert create_resp.status_code == 201

@@ -3,32 +3,8 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 
-from tests.auth_utils import _create_user
-
-
-async def _create_blog(client: AsyncClient, headers=None) -> tuple[int, dict[str, str]]:
-    """Create a blog and return blog_id and headers"""
-    if headers is None:
-        headers = await _create_user(client, f"UserCreateBlog{uuid4().hex[:6]}")
-
-    resp = await client.post(
-        "/api/blogs",
-        data={
-            "title": f"Test Blog {uuid4().hex[:6]}",
-            "content": "Test blog content",
-            "tags": "#test#blog",
-        },
-        headers=headers,
-    )
-    assert resp.status_code == 201
-
-    # Get blog ID from user's blogs
-    resp2 = await client.get("/api/users/me/blogs", headers=headers)
-    assert resp2.status_code == 200
-    page = resp2.json()
-    blog_id = page["data"][0]["id"]
-
-    return blog_id, headers
+from tests.utils.auth_utils import _create_user
+from tests.utils.blog_utils import _create_blog
 
 
 class TestCommentBasics:
@@ -65,7 +41,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_create_comment_success(self, client: AsyncClient):
         """Test successful comment creation"""
-        headers = await _create_user(client, f"UserCreateCommentSuccess{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserCreateCommentSuccess{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         resp = await client.post(
@@ -97,7 +75,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_create_comment_nonexistent_blog(self, client: AsyncClient):
         """Test comment creation on non-existent blog"""
-        headers = await _create_user(client, f"UserCreateCommentNonExistBlog{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserCreateCommentNonExistBlog{uuid4().hex[:6]}"
+        )
 
         resp = await client.post(
             "/api/blogs/99999/comments",
@@ -109,7 +89,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_create_comment_empty_content(self, client: AsyncClient):
         """Test comment creation with empty content"""
-        headers = await _create_user(client, f"UserCreateCommentEmptyContent{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserCreateCommentEmptyContent{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         resp = await client.post(
@@ -122,7 +104,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_create_comment_missing_content(self, client: AsyncClient):
         """Test comment creation with missing content field"""
-        headers = await _create_user(client, f"UserCreateCommentMissingContent{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserCreateCommentMissingContent{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         resp = await client.post(
@@ -135,7 +119,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_create_multiple_comments(self, client: AsyncClient):
         """Test creating multiple comments on same blog"""
-        headers = await _create_user(client, f"UserCreateMultipleComment{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserCreateMultipleComment{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         comments_content = ["First comment", "Second comment", "Third comment"]
@@ -163,7 +149,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_update_comment_success(self, client: AsyncClient):
         """Test successful comment update"""
-        headers = await _create_user(client, f"UserUpdateCommentSuccess{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserUpdateCommentSuccess{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         # Create comment
@@ -194,7 +182,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_update_comment_unauthorized(self, client: AsyncClient):
         """Test comment update without authentication"""
-        headers = await _create_user(client, f"UserCommentUnauthorized{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserCommentUnauthorized{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         # Create comment
@@ -219,7 +209,9 @@ class TestCommentCRUD:
     async def test_update_comment_by_different_user(self, client: AsyncClient):
         """Test that users cannot update other users' comments"""
         # User 1 creates comment
-        user1_headers = await _create_user(client, f"UserUpdateCommentDiffUser{uuid4().hex[:6]}")
+        user1_headers = await _create_user(
+            client, f"UserUpdateCommentDiffUser{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         create_resp = await client.post(
@@ -233,7 +225,9 @@ class TestCommentCRUD:
         comment_id = comments_resp.json()[0]["id"]
 
         # User 2 tries to update User1's comment
-        user2_headers = await _create_user(client, f"UserUpdateCommentDiffUser2{uuid4().hex[:6]}")
+        user2_headers = await _create_user(
+            client, f"UserUpdateCommentDiffUser2{uuid4().hex[:6]}"
+        )
         update_resp = await client.patch(
             f"/api/comments/{comment_id}",
             json={"content": "Hacked by User2"},
@@ -244,7 +238,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_update_nonexistent_comment(self, client: AsyncClient):
         """Test updating non-existent comment"""
-        headers = await _create_user(client, f"UserTestUpdateNonexistantComment{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserTestUpdateNonexistantComment{uuid4().hex[:6]}"
+        )
 
         resp = await client.patch(
             "/api/comments/99999",
@@ -256,7 +252,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_update_comment_empty_content(self, client: AsyncClient):
         """Test updating comment with empty content"""
-        headers = await _create_user(client, f"UserUpdateCommentEmptyContent{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserUpdateCommentEmptyContent{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         # Create comment
@@ -281,7 +279,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_delete_comment_success(self, client: AsyncClient):
         """Test successful comment deletion"""
-        headers = await _create_user(client, f"UserDeleteCommentSuccess{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserDeleteCommentSuccess{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         # Create comment
@@ -311,7 +311,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_delete_comment_unauthorized(self, client: AsyncClient):
         """Test comment deletion without authentication"""
-        headers = await _create_user(client, f"UserDeleteCommentUnzauthrized{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserDeleteCommentUnzauthrized{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         # Create comment
@@ -333,7 +335,9 @@ class TestCommentCRUD:
     async def test_delete_comment_by_different_user(self, client: AsyncClient):
         """Test that users cannot delete other users' comments"""
         # User1 creates comment
-        user1_headers = await _create_user(client, f"UserDeleteCommentDIfferentUser{uuid4().hex[:6]}")
+        user1_headers = await _create_user(
+            client, f"UserDeleteCommentDIfferentUser{uuid4().hex[:6]}"
+        )
         blog_id, _ = await _create_blog(client)
 
         create_resp = await client.post(
@@ -347,7 +351,9 @@ class TestCommentCRUD:
         comment_id = comments_resp.json()[0]["id"]
 
         # User2 tries to delete User1's comment
-        user2_headers = await _create_user(client, f"UserDeleteCommentDifferentUser2{uuid4().hex[:6]}")
+        user2_headers = await _create_user(
+            client, f"UserDeleteCommentDifferentUser2{uuid4().hex[:6]}"
+        )
         delete_resp = await client.delete(
             f"/api/comments/{comment_id}", headers=user2_headers
         )
@@ -356,7 +362,9 @@ class TestCommentCRUD:
     @pytest.mark.asyncio
     async def test_delete_nonexistent_comment(self, client: AsyncClient):
         """Test deleting non-existent comment"""
-        headers = await _create_user(client, f"UserDeleteNonExistentComment{uuid4().hex[:6]}")
+        headers = await _create_user(
+            client, f"UserDeleteNonExistentComment{uuid4().hex[:6]}"
+        )
 
         resp = await client.delete("/api/comments/99999", headers=headers)
         assert resp.status_code == 404

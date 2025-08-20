@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from httpx import AsyncClient
 
 
@@ -28,3 +30,23 @@ async def _login_user(client: AsyncClient, username: str) -> dict[str, str]:
     assert log.status_code == 200, log.text
     token = log.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+async def _create_test_user(client: AsyncClient, suffix: str = None) -> tuple[dict[str, str], dict]:  # type: ignore
+    """helper to create a test user and return headers + user data"""
+    unique = uuid4().hex[:8] if not suffix else suffix
+    user_data = {
+        "username": f"testuser_{unique}",
+        "first_name": "Test",
+        "last_name": "User",
+        "email": f"testuser_{unique}@example.com",
+        "password": "Secret123@",
+    }
+
+    resp = await client.post("/auth/register", json=user_data)
+    assert resp.status_code == 200
+
+    token = resp.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    return headers, user_data
