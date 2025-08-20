@@ -10,7 +10,7 @@ from app.blogs.models import Blog, BlogTagLink, Comment, Tag
 from app.models.blog_like_link import BlogLikeLink
 from app.notifications.models import Notification, NotificationType
 from app.notifications.notification_service import create_notification
-from app.users.models import UserFollowLink
+from app.users.models import User, UserFollowLink
 from app.users.schema import CurrentUserRead
 from app.utils.remove_image import remove_image
 from app.utils.save_image import save_image
@@ -253,6 +253,9 @@ async def get_user_blogs(
 
     Returns a dict with total count, pagination info, and blog data.
     """
+    if not await session.get(User, user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    
     query = select(Blog).where(Blog.author == user_id)
     total_query = select(func.count()).select_from(Blog).where(Blog.author == user_id)
 

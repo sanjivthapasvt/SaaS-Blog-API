@@ -1,12 +1,20 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class UserRead(BaseModel):
     id: int
     full_name: str
     profile_pic: str | None
+    
+
+class UserResponse(BaseModel):
+    id: int
+    full_name: str
+    profile_pic: str | None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CurrentUserRead(BaseModel):

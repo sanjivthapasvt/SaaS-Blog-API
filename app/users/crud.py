@@ -1,6 +1,6 @@
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from app.auth.hashing import hash_password, verify_password
 from app.auth.security import check_password_strength
@@ -102,73 +102,69 @@ async def list_users(search: str | None, limit: int, offset: int, session: Async
 async def list_followers(
     user_id: int, search: str | None, limit: int, offset: int, session: AsyncSession
 ):
-    raw_followers = await session.execute(
-        select(UserFollowLink.follower_id)
-        .where(UserFollowLink.following_id == user_id)
-        .limit(limit)
-        .offset(offset)
-    )
-    raw_followers_result = raw_followers.scalars().all()
-    query = select(User).where(User.id.in_(raw_followers_result))  # type: ignore
-
-    total_query = (
-        select(func.count())
-        .select_from(UserFollowLink)
+    if not await session.get(User, user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    base_query = (
+        select(User)
+        .join(UserFollowLink, User.id == UserFollowLink.follower_id) # type: ignore
         .where(UserFollowLink.following_id == user_id)
     )
-
+    
     if search:
         search_term = f"%{search.lower()}%"
         condition = func.lower(User.full_name).like(search_term)
-        query = query.where(condition)
+        base_query = base_query.where(condition)
 
-    total = await session.execute(total_query)
-    total_result = total.scalars().one()
-    followers = await session.execute(query)
-    followers_result = followers.scalars().all()
+    total_query = select(func.count()).select_from(base_query.subquery())
+    total_result = await session.execute(total_query)
+    total_count = total_result.scalar() or 0
+    
+    followers_query = (
+        base_query
+        .limit(limit)
+        .offset(offset)
+        .order_by(User.full_name)
+    )
+    
+    followers_result = await session.execute(followers_query)
+    followers = followers_result.scalars().all()
 
-    return {
-        "total": total_result,
-        "limit": limit,
-        "offset": offset,
-        "data": followers_result,
-    }
+    return followers, total_count
 
 
 async def list_followings(
     user_id: int, search: str | None, limit: int, offset: int, session: AsyncSession
 ):
-    raw_followings = await session.execute(
-        select(UserFollowLink.following_id)
-        .where(UserFollowLink.follower_id == user_id)
-        .limit(limit)
-        .offset(offset)
-    )
-    raw_followings_result = raw_followings.scalars().all()
-    query = select(User).where(User.id.in_(raw_followings_result))  # type: ignore
-    total_query = (
-        select(func.count())
-        .select_from(UserFollowLink)
+    if not await session.get(User, user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    base_query = (
+        select(User)
+        .join(UserFollowLink, User.id == UserFollowLink.following_id) # type: ignore
         .where(UserFollowLink.follower_id == user_id)
     )
 
     if search:
         search_term = f"%{search.lower()}%"
         condition = func.lower(User.full_name).like(search_term)
-        query = query.where(condition)
+        base_query = base_query.where(condition)
 
-    total = await session.execute(total_query)
-    total_result = total.scalars().one()
-    followings = await session.execute(query)
-    followings_result = followings.scalars().all()
+    total_query = select(func.count()).select_from(base_query.subquery())
+    total_result = await session.execute(total_query)
+    total_count = total_result.scalar() or 0
+    
+    followings_query = (
+        base_query
+        .limit(limit)
+        .offset(offset)
+        .order_by(User.full_name)
+    )
+    
+    followings_result = await session.execute(followings_query)
+    followings = followings_result.scalars().all()
 
-    return {
-        "total": total_result,
-        "limit": limit,
-        "offset": offset,
-        "data": followings_result,
-    }
-
+    return followings, total_count
 
 async def follow_user(
     user_id: int, session: AsyncSession, current_user: CurrentUserRead
