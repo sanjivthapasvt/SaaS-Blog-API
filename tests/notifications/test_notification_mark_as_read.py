@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from tests.auth_utils import _create_user
+from tests.utils.auth_utils import _create_user
 
 
 class TestNotificationMarkAsRead:
