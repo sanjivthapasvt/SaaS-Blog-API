@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, Query, UploadFile
+from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.exceptions import HTTPException
 from fastapi_limiter.depends import RateLimiter
 
@@ -11,7 +11,7 @@ from app.users.crud import (change_user_password, follow_user, get_user_info,
                             list_followers, list_followings, list_users,
                             unfollow_user, update_user_profile)
 from app.users.models import User
-from app.users.schema import CurrentUserRead, UserChangePassword, UserRead
+from app.users.schema import CurrentUserRead, UserChangePassword, UserRead, UserResponse
 from app.utils.rate_limiter import user_identifier
 from app.utils.common_params import get_common_params
 
@@ -171,9 +171,19 @@ async def list_followers_route(
     session: AsyncSession = Depends(get_session),
 ):
     try:
-        return await list_followers(
+        
+        followers, total = await list_followers(
             session=session, user_id=user_id, search=params.search, limit=params.limit, offset=params.offset
         )
+        data = [
+            UserResponse.model_validate(
+                user
+            )for user in followers
+        ]
+        return PaginatedResponse[UserResponse](
+            total=total, limit=params.limit, offset=params.offset, data=data
+        )
+
     except HTTPException:
         raise
     except Exception as e:
@@ -197,9 +207,18 @@ async def list_followings_route(
     session: AsyncSession = Depends(get_session),
 ):
     try:
-        return await list_followings(
+        followings, total =  await list_followings(
             session=session, user_id=user_id, search=params.search, limit=params.limit, offset=params.offset
         )
+        
+        data = [
+            UserResponse.model_validate(user)
+            for user in followings
+        ]
+        return PaginatedResponse[UserResponse](
+            total=total, limit=params.limit, offset=params.offset, data=data
+        )
+        
     except HTTPException:
         raise
     except Exception as e:
