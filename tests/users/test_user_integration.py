@@ -28,8 +28,8 @@ class TestUserEndpointsIntegration:
         }
 
         # Register users
-        resp1 = await client.post("/auth/register", json=user1_data)
-        resp2 = await client.post("/auth/register", json=user2_data)
+        resp1 = await client.post("/api/auth/register", json=user1_data)
+        resp2 = await client.post("/api/auth/register", json=user2_data)
 
         headers1 = {"Authorization": f"Bearer {resp1.json()['access_token']}"}
         headers2 = {"Authorization": f"Bearer {resp2.json()['access_token']}"}
@@ -108,7 +108,7 @@ class TestUserEndpointsIntegration:
             "password": "Secret123@",
         }
 
-        resp = await client.post("/auth/register", json=user_data)
+        resp = await client.post("/api/auth/register", json=user_data)
         assert resp.status_code == 200
 
         token = resp.json()["access_token"]

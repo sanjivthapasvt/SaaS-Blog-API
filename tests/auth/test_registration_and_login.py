@@ -16,7 +16,7 @@ class TestUserRegistration:
             "password": "SecurePass123!",
         }
 
-        resp = await client.post("/auth/register", json=register_payload)
+        resp = await client.post("/api/auth/register", json=register_payload)
         assert resp.status_code == 200, resp.text
 
         data = resp.json()
@@ -39,12 +39,12 @@ class TestUserRegistration:
         }
 
         # First registration
-        resp1 = await client.post("/auth/register", json=payload)
+        resp1 = await client.post("/api/auth/register", json=payload)
         assert resp1.status_code == 200
 
         # Second registration with same username should fail
         payload["email"] = "unique2@example.com"
-        resp2 = await client.post("/auth/register", json=payload)
+        resp2 = await client.post("/api/auth/register", json=payload)
         assert resp2.status_code == 400
         assert "username" in resp2.json()["detail"].lower()
 
@@ -69,10 +69,10 @@ class TestUserRegistration:
             "password": "SecurePass123!",
         }
 
-        resp1 = await client.post("/auth/register", json=payload1)
+        resp1 = await client.post("/api/auth/register", json=payload1)
         assert resp1.status_code == 200
 
-        resp2 = await client.post("/auth/register", json=payload2)
+        resp2 = await client.post("/api/auth/register", json=payload2)
         assert resp2.status_code == 400
         assert (
             "email" in resp2.json()["detail"].lower()
@@ -101,7 +101,7 @@ class TestUserRegistration:
             "password": "SecurePass123!",
         }
 
-        resp = await client.post("/auth/register", json=payload)
+        resp = await client.post("/api/auth/register", json=payload)
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
@@ -126,7 +126,7 @@ class TestUserRegistration:
             "password": weak_password,
         }
 
-        resp = await client.post("/auth/register", json=payload)
+        resp = await client.post("/api/auth/register", json=payload)
         assert resp.status_code == 422 or resp.status_code == 400
 
     @pytest.mark.asyncio
@@ -145,7 +145,7 @@ class TestUserRegistration:
 
         del payload[field]  # Remove the field
 
-        resp = await client.post("/auth/register", json=payload)
+        resp = await client.post("/api/auth/register", json=payload)
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
@@ -161,7 +161,7 @@ class TestUserRegistration:
             "password": "SecurePass123!",
         }
 
-        resp = await client.post("/auth/register", json=payload)
+        resp = await client.post("/api/auth/register", json=payload)
         assert resp.status_code == 422 or resp.status_code == 400
 
 
@@ -182,7 +182,7 @@ class TestUserLogin:
     @pytest.fixture
     async def registered_user(self, client: AsyncClient, registered_user_data):
         """Create a registered user for login tests"""
-        resp = await client.post("/auth/register", json=registered_user_data)
+        resp = await client.post("/api/auth/register", json=registered_user_data)
         assert resp.status_code == 200
         return registered_user_data
 
@@ -190,7 +190,7 @@ class TestUserLogin:
     async def test_successful_login(self, client: AsyncClient, registered_user_data):
         """Test successful login with valid credentials"""
         # First register the user
-        resp = await client.post("/auth/register", json=registered_user_data)
+        resp = await client.post("/api/auth/register", json=registered_user_data)
         assert resp.status_code == 200
 
         login_payload = {
@@ -198,7 +198,7 @@ class TestUserLogin:
             "password": registered_user_data["password"],
         }
 
-        resp = await client.post("/auth/login", json=login_payload)
+        resp = await client.post("/api/auth/login", json=login_payload)
         assert resp.status_code == 200, resp.text
 
         data = resp.json()
@@ -214,7 +214,7 @@ class TestUserLogin:
             "password": registered_user_data["password"],
         }
 
-        resp = await client.post("/auth/login", json=login_payload)
+        resp = await client.post("/api/auth/login", json=login_payload)
         # This should fail cause I haven't implemented yet
         assert resp.status_code == 400
 
@@ -226,7 +226,7 @@ class TestUserLogin:
             "password": "wrongpassword",
         }
 
-        resp = await client.post("/auth/login", json=login_payload)
+        resp = await client.post("/api/auth/login", json=login_payload)
         assert resp.status_code == 400
         assert "incorrect" in resp.json()["detail"].lower()
 
@@ -235,7 +235,7 @@ class TestUserLogin:
         """Test login fails with non-existent username"""
         login_payload = {"username": "nonexistentuser", "password": "anypassword"}
 
-        resp = await client.post("/auth/login", json=login_payload)
+        resp = await client.post("/api/auth/login", json=login_payload)
         assert resp.status_code == 400 or resp.status_code == 401
 
     @pytest.mark.asyncio
@@ -245,7 +245,7 @@ class TestUserLogin:
         payload = {"username": "testuser", "password": "password"}
         del payload[field]
 
-        resp = await client.post("/auth/login", json=payload)
+        resp = await client.post("/api/auth/login", json=payload)
         assert resp.status_code == 422
 
     @pytest.mark.asyncio
@@ -253,5 +253,5 @@ class TestUserLogin:
         """Test login fails with empty credentials"""
         login_payload = {"username": "", "password": ""}
 
-        resp = await client.post("/auth/login", json=login_payload)
+        resp = await client.post("/api/auth/login", json=login_payload)
         assert resp.status_code == 422 or resp.status_code == 400

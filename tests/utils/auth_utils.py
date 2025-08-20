@@ -5,7 +5,7 @@ from httpx import AsyncClient
 
 async def _create_user(client: AsyncClient, username: str) -> dict[str, str]:
     reg = await client.post(
-        "/auth/register",
+        "/api/auth/register",
         json={
             "username": f"{username}",
             "first_name": "Blog",
@@ -21,7 +21,7 @@ async def _create_user(client: AsyncClient, username: str) -> dict[str, str]:
 
 async def _login_user(client: AsyncClient, username: str) -> dict[str, str]:
     log = await client.post(
-        "/auth/login",
+        "/api/auth/login",
         json={
             "username": f"{username}",
             "password": "SecretPassword1#",
@@ -43,7 +43,7 @@ async def _create_test_user(client: AsyncClient, suffix: str = None) -> tuple[di
         "password": "Secret123@",
     }
 
-    resp = await client.post("/auth/register", json=user_data)
+    resp = await client.post("/api/auth/register", json=user_data)
     assert resp.status_code == 200
 
     token = resp.json()["access_token"]

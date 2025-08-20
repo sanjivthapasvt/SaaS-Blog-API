@@ -120,14 +120,14 @@ class TestUserMeEndpoints:
 
         # Verify old password doesn't work
         login_resp = await client.post(
-            "/auth/login",
+            "/api/auth/login",
             json={"username": user_data["username"], "password": "Secret123@"},
         )
         assert login_resp.status_code == 400
 
         # Verify new password works
         login_resp = await client.post(
-            "/auth/login",
+            "/api/auth/login",
             json={"username": user_data["username"], "password": "NewSecret123@"},
         )
         assert login_resp.status_code == 200

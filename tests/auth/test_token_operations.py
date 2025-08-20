@@ -22,7 +22,7 @@ class TestTokenOperations:
         """Test that access token has proper JWT structure"""
         # Register and get tokens
 
-        resp = await client.post("/auth/register", json=token_user_data)
+        resp = await client.post("/api/auth/register", json=token_user_data)
         assert resp.status_code == 200
         tokens = resp.json()
 
@@ -41,13 +41,13 @@ class TestTokenOperations:
         """Test refresh token generates new valid tokens"""
         # Login and get tokens
         login_payload = {"username": "tokenuser", "password": "SecurePass123!"}
-        resp = await client.post("/auth/login", json=login_payload)
+        resp = await client.post("/api/auth/login", json=login_payload)
         assert resp.status_code == 200
         initial_tokens = resp.json()
 
         refresh_token = initial_tokens["refresh_token"]
 
-        resp = await client.post(f"/auth/refresh?refresh_token={refresh_token}")
+        resp = await client.post(f"/api/auth/refresh?refresh_token={refresh_token}")
         assert resp.status_code == 200
 
         data = resp.json()
@@ -69,5 +69,5 @@ class TestTokenOperations:
         ]
 
         for token in malformed_tokens:
-            resp = await client.post(f"/auth/refresh?refresh_token={token}")
+            resp = await client.post(f"/api/auth/refresh?refresh_token={token}")
             assert resp.status_code == 401

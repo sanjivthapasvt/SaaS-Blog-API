@@ -56,8 +56,8 @@ app.add_middleware(
 
 app.mount("/media", StaticFiles(directory="media"), name="media")
 
-app.include_router(auth_router, prefix="/auth", tags=["Auth"])
-app.include_router(google_auth_router, prefix="/auth", tags=["Auth"])
+app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
+app.include_router(google_auth_router, prefix="/api/auth", tags=["Auth"])
 app.include_router(blog_router, prefix="/api", tags=["Blog"])
 app.include_router(comment_router, prefix="/api", tags=["Comments"])
 app.include_router(notification_router, prefix="/api", tags=["Notification"])

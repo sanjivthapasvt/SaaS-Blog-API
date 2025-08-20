@@ -12,7 +12,7 @@ class TestLogout:
         """Test successful logout with valid token"""
         headers = await _create_user(client=client, username="logoutuser001")
 
-        resp = await client.post("/auth/logout", headers=headers)
+        resp = await client.post("/api/auth/logout", headers=headers)
         assert resp.status_code == 200
 
         data = resp.json()
@@ -24,7 +24,7 @@ class TestLogout:
     @pytest.mark.asyncio
     async def test_logout_without_token(self, client: AsyncClient):
         """Test logout fails without authentication token"""
-        resp = await client.post("/auth/logout")
+        resp = await client.post("/api/auth/logout")
         assert resp.status_code == 401 or resp.status_code == 403
         assert "not authenticated" in resp.json()["detail"].lower()
 
@@ -33,7 +33,7 @@ class TestLogout:
         """Test logout fails with invalid token"""
         headers = {"Authorization": "Bearer invalid_token"}
 
-        resp = await client.post("/auth/logout", headers=headers)
+        resp = await client.post("/api/auth/logout", headers=headers)
         assert resp.status_code == 401 or resp.status_code == 403
 
     @pytest.mark.asyncio
@@ -42,9 +42,9 @@ class TestLogout:
         headers = await _create_user(client=client, username="doublelogout")
 
         # First logout should succeed
-        resp1 = await client.post("/auth/logout", headers=headers)
+        resp1 = await client.post("/api/auth/logout", headers=headers)
         assert resp1.status_code == 200
 
         # Second logout with same token should fail
-        resp2 = await client.post("/auth/logout", headers=headers)
+        resp2 = await client.post("/api/auth/logout", headers=headers)
         assert resp2.status_code == 401 or resp2.status_code == 403
