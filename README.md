@@ -44,6 +44,7 @@ This project is designed for **scalability**, **security**, and **extensibility*
 - 📌 Bookmarks (save posts for later)
 - 🗂️ Heavy background tasks (image processing, analytics, etc.)
 - ⏰ Scheduled periodic tasks (cleanup expired tokens, cache updates)
+
 ---
 
 ## 🛠️ Getting Started  
@@ -58,23 +59,38 @@ uv --version
 ### 2. Clone & setup  
 
 ```bash
-git clone https://github.com/sanjivthapasvt/saas-blog-api.git
-cd saas-blog-api
+git clone https://github.com/sanjivthapasvt/SaaS-Blog-API.git
+cd SaaS-Blog-API
 uv venv
 source .venv/bin/activate
 uv pip install -r pyproject.toml
 ```
 
-### 3. Run the project  
+### 3. Environment Variables
+
+Create a `.env` file in the root directory with the following required variables:
+
+```env
+SECRET_KEY=your-secret-key-here
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+```
+
+#### Environment Variable Details:
+- **`SECRET_KEY`** – Used for JWT token signing and encryption. Generate a strong random string.
+- **`GOOGLE_CLIENT_ID`** – Google OAuth client ID from Google Cloud Console
+- **`GOOGLE_CLIENT_SECRET`** – Google OAuth client secret from Google Cloud Console  
+- **`GOOGLE_REDIRECT_URI`** – Callback URL for Google OAuth (must match Google Cloud Console settings)
+
+### 4. Run the project  
 
 ```bash
-
 # Development
 fastapi dev app/main.py
 
 # or with Uvicorn
 uvicorn app.main:app --reload
-
 ```
 
 ---
@@ -125,6 +141,7 @@ pytest tests/
 │   ├── utils/               # Helpers (logging, rate-limiters, etc.)
 │   └── main.py              # Entry point
 ├── tests/                   # Pytest test suite
+├── .env                     # Environment variables (create this)
 ├── pyproject.toml
 ├── uv.lock
 └── README.md
@@ -146,4 +163,4 @@ Contributions, ideas, suggestions, and feedback are always welcome!
 
 ## 📜 License  
 
-MIT License – feel free to use and contribute.  
+MIT License – feel free to use and contribute.
