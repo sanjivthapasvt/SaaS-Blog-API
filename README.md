@@ -101,10 +101,10 @@ uvicorn app.main:app --reload
 - ReDoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)  
 
 ### Example Endpoints  
-- `POST /auth/register` – Register new user  
-- `POST /auth/login` – Login & get tokens  
-- `POST /auth/logout` – Logout (blacklist token)  
-- `POST /auth/google` – Google login flow  
+- `POST /api/auth/register` – Register new user  
+- `POST /api/auth/login` – Login & get tokens  
+- `POST /api/auth/logout` – Logout (blacklist token)  
+- `POST /api/auth/google` – Google login flow  
 - `GET /api/blogs` – List blogs (with pagination/search)  
 - `POST /api/blogs/{id}/like` – Like/unlike blog  
 - `POST /api/blogs/{id}/comments` – Add comment  
