@@ -1,8 +1,5 @@
-import jwt
 import pytest
 from httpx import AsyncClient
-
-from tests.auth_utils import _create_user
 
 
 class TestUserRegistration:

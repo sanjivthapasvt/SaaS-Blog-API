@@ -1,9 +1,9 @@
+from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 
 from tests.blogs.test_comments_crud import _create_blog
-from tests.test_users import _auth_header
-
+from tests.auth_utils import _create_user
 
 class TestCommentIntegration:
     """Test comment integration with other features"""
@@ -11,7 +11,7 @@ class TestCommentIntegration:
     @pytest.mark.asyncio
     async def test_complete_comment_workflow(self, client: AsyncClient):
         """Test complete comment workflow: create, read, update, delete"""
-        headers = await _auth_header(client)
+        headers = await _create_user(client, f"{uuid4().hex[:6]}TestCommentWorkFlow")
         blog_id, _ = await _create_blog(client)
 
         # 1. Create comment
@@ -60,8 +60,8 @@ class TestCommentIntegration:
         blog_id, blog_author_headers = await _create_blog(client)
 
         # Create other users
-        user1_headers = await _auth_header(client)
-        user2_headers = await _auth_header(client)
+        user1_headers = await _create_user(client, f"TestMultipleUserComment1{uuid4().hex[:6]}")
+        user2_headers = await _create_user(client, f"TestMultipleUserComment2{uuid4().hex[:6]}")
 
         # Multiple users comment on the blog
         comments_data = [
@@ -118,7 +118,7 @@ class TestCommentIntegration:
     @pytest.mark.asyncio
     async def test_comments_after_blog_deletion(self, client: AsyncClient):
         """Test comment behavior when blog is deleted"""
-        headers = await _auth_header(client)
+        headers = await _create_user(client, f"TestCommentAfterDeletion{uuid4().hex[:6]}")
         blog_id, blog_headers = await _create_blog(client)
 
         # Create comments
@@ -158,7 +158,7 @@ class TestCommentIntegration:
     @pytest.mark.asyncio
     async def test_comment_author_information(self, client: AsyncClient):
         """Test that comment includes correct author information"""
-        headers = await _auth_header(client)
+        headers = await _create_user(client, f"TestCommentAuthorInfo{uuid4().hex[:6]}")
         blog_id, _ = await _create_blog(client)
 
         # Get user info
