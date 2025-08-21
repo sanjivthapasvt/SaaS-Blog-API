@@ -1,6 +1,6 @@
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, func, select
+from sqlmodel import func, select
 
 from app.auth.hashing import hash_password, verify_password
 from app.auth.security import check_password_strength
