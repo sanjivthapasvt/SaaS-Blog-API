@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Form, UploadFile
+from typing import List
+from fastapi import APIRouter, Depends, Form, Query, UploadFile
 from fastapi.exceptions import HTTPException
 from fastapi_limiter.depends import RateLimiter
 
@@ -101,6 +102,7 @@ async def change_password_route(
 )
 async def list_current_user_blog_route(
     params: CommonParams = Depends(get_common_params),
+    tags: List[str] | None = Query(None),
     session: AsyncSession = Depends(get_session),
     current_user: UserRead = Depends(get_current_user),
 ):
@@ -111,6 +113,7 @@ async def list_current_user_blog_route(
             limit=params.limit,
             offset=params.offset,
             user_id=current_user.id,
+            tags=tags
         )
 
         data = [
@@ -286,12 +289,13 @@ async def unfollow_user_route(
 )
 async def list_user_blog_route(
     user_id: int,
+    tags: List[str] | None = Query(None),
     params: CommonParams = Depends(get_common_params),
     session: AsyncSession = Depends(get_session),
 ):
     try:
         blogs_result, total_result = await get_user_blogs(
-            session=session, search=params.search, limit=params.limit, offset=params.offset, user_id=user_id
+            session=session, search=params.search, limit=params.limit, offset=params.offset, user_id=user_id, tags=tags
         )
 
         data = [

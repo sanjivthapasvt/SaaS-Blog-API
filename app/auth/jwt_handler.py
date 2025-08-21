@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi.security import HTTPBearer
 from jose import JWTError, jwt
 
-SECRET_KEY = os.getenv("SECRET_KEY") or "sanjivthapafastapisecretkey"
+SECRET_KEY = os.getenv("SECRET_KEY") or ""
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 1
