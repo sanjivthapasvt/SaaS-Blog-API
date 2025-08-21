@@ -196,6 +196,7 @@ async def update_blog_route(
     blog_id: int,
     title: str | None = Form(None),
     content: str | None = Form(None),
+    is_pubic: bool | None = Form(True),
     thumbnail: UploadFile | None = None,
     session: AsyncSession = Depends(get_session),
     current_user: CurrentUserRead = Depends(get_current_user),
@@ -208,6 +209,7 @@ async def update_blog_route(
             title=title,
             content=content,
             thumbnail=thumbnail,
+            is_public=is_pubic,
             current_user=current_user.id,
             thumbnail_path=thumbnail_path,
         )
