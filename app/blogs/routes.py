@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Form, UploadFile
+from typing import List
+from fastapi import APIRouter, Depends, Form, Query, UploadFile
 from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from fastapi_limiter.depends import RateLimiter
@@ -95,12 +96,13 @@ async def like_unlike_blog_route(
 )
 async def get_all_blogs_route(
     params:CommonParams = Depends(get_common_params),
+    tags: List[str] | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """Retrieve all blogs with optional search and pagination."""
     try:
         blogs_result, total_result = await get_all_blogs(
-            session=session, search=params.search, limit=params.limit, offset=params.offset
+            session=session, search=params.search, limit=params.limit, offset=params.offset, tags=tags
         )
         # validates response and set tags as list of strings
         data = [
@@ -133,6 +135,7 @@ async def get_all_blogs_route(
 async def get_liked_blog_route(
     params: CommonParams = Depends(get_common_params),
     current_user: CurrentUserRead = Depends(get_current_user),
+    tags: List[str] | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """Retrieve blogs liked by the current user."""
@@ -143,6 +146,7 @@ async def get_liked_blog_route(
             limit=params.limit,
             offset=params.offset,
             user_id=current_user.id,
+            tags=tags
         )
 
         data = [

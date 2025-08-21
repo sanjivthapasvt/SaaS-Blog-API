@@ -1,10 +1,12 @@
+import asyncio
 from datetime import datetime, timezone
+from typing import List
 
 from aiosqlite import IntegrityError
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlmodel import and_, col, func, insert, select, delete
+from sqlmodel import and_, col, exists, func, insert, delete, select
 
 from app.blogs.models import Blog, BlogTagLink, Comment, Tag
 from app.models.blog_like_link import BlogLikeLink
@@ -165,29 +167,68 @@ async def like_unlike_blog(
 
 
 async def get_all_blogs(
-    session: AsyncSession, search: str | None, limit: int, offset: int
+    session: AsyncSession, search: str | None, limit: int, offset: int, tags: List[str] | None
 ):
     """
     Retrieve paginated list of blogs, optionally filtered by a search term in the title.
 
     Returns a dict with total count, pagination info, and blog data.
     """
-    query = select(Blog)
-    total_query = select(func.count()).select_from(Blog)
+    conditions = []
 
     if search:
         search_term = f"%{search.lower()}%"
-        condition = func.lower(Blog.title).like(search_term)
-        query = query.where(condition)
-        total_query = total_query.where(condition)
+        conditions.append(func.lower(Blog.title).like(search_term))
+    
 
-    blogs = await session.execute(query.offset(offset).limit(limit).options(selectinload(Blog.tags)))  # type: ignore
-    blogs_result = blogs.scalars().all()
+    # Tag filtering
+    if tags:
+        # Create a subquery that checks if a blog has all required tags
+        tag_subquery = (
+            select(BlogTagLink.blog_id)
+            .join(Tag, BlogTagLink.tag_id == Tag.id) # type: ignore
+            .where(
+                and_(
+                    BlogTagLink.blog_id == Blog.id,
+                    col(Tag.title).in_(tags)
+                )
+            )
+            .group_by(BlogTagLink.blog_id) # type: ignore
+            .having(func.count(func.distinct(Tag.id)) == len(tags))
+        )
+        
+        conditions.append(exists(tag_subquery))
+    
 
-    total = await session.execute(total_query)
-    total_result = total.scalars().one()
+    # main query
+    base_condition = and_(*conditions) if conditions else True
+    
+    # main query with pagination
+    blogs_query = (
+        select(Blog)
+        .where(base_condition)
+        .options(selectinload(Blog.tags)) # type: ignore
+        .limit(limit)
+        .offset(offset)
+    )
+    
+    # count query (reuse the same conditions)
+    count_query = (
+        select(func.count(Blog.id)) # type: ignore
+        .where(base_condition)
+    )
+    
+    # Execute both queries concurrently
+    blogs_result, total_result = await asyncio.gather(
+        session.execute(blogs_query),
+        session.execute(count_query)
+    )
+    
+    blogs = blogs_result.scalars().all()
+    total = total_result.scalar_one()
+    
+    return blogs, total
 
-    return blogs_result, total_result
 
 
 async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
@@ -205,44 +246,80 @@ async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
 
 
 async def get_liked_blogs(
-    session: AsyncSession, search: str | None, limit: int, offset: int, user_id: int
+    session: AsyncSession, search: str | None, limit: int, offset: int, user_id: int, tags: List[str] | None
 ):
     """
     Retrieve paginated blogs liked by a user, optionally filtered by a search term.
 
     Returns a dict with total count, pagination info, and blog data.
     """
-    
+        
     base_query = (
-        select(Blog)
-        .join(BlogLikeLink, col(Blog.id) == col(BlogLikeLink.blog_id))
-        .where(col(BlogLikeLink.user_id) == user_id)
-    )
-    
-    if search:
-        search_term = f"%{search.lower()}%"
-        base_query = base_query.where(
-            func.lower(col(Blog.title)).like(search_term)
+            select(Blog)
+            .join(BlogLikeLink, Blog.id == BlogLikeLink.blog_id) # type: ignore
+            .where(BlogLikeLink.user_id == user_id)
         )
     
-    # Count query
-    total_query = select(func.count()).select_from(base_query.subquery())
-    total_result = await session.execute(total_query)
-    total_count = total_result.scalar() or 0
+    conditions = []
+
+    if search:
+        search_term = f"%{search.lower()}%"
+        conditions.append(func.lower(Blog.title).like(search_term))
+
+    # Tag filtering
+    if tags:
+        # Create a subquery that checks if a blog has all required tags
+        tag_subquery = (
+            select(BlogTagLink.blog_id)
+            .join(Tag, BlogTagLink.tag_id == Tag.id) # type: ignore
+            .where(
+                and_(
+                    BlogTagLink.blog_id == Blog.id,
+                    col(Tag.title).in_(tags)
+                )
+            )
+            .group_by(BlogTagLink.blog_id) # type: ignore
+            .having(func.count(func.distinct(Tag.id)) == len(tags))
+        )
+        
+        conditions.append(exists(tag_subquery))
+
     
-    # Data query with column reference
+    if conditions:
+        filtered_query = base_query.where(and_(*conditions))
+    else:
+        filtered_query = base_query
+        
+    # main query with pagination
     blogs_query = (
-        base_query
-        .options(selectinload(getattr(Blog, 'tags')))
+        filtered_query
+        .options(selectinload(Blog.tags)) # type: ignore
+        .order_by(Blog.id) # type: ignore
         .limit(limit)
         .offset(offset)
-        .order_by(col(Blog.id)) 
+    )
+
+   # create count query
+    count_query = (
+        select(func.count(Blog.id)) # type: ignore
+        .join(BlogLikeLink, Blog.id == BlogLikeLink.blog_id) # type: ignore
+        .where(BlogLikeLink.user_id == user_id)
     )
     
-    blogs_result = await session.execute(blogs_query)
-    blogs = blogs_result.scalars().all()
+    # apply conditions to count query
+    if conditions:
+        count_query = count_query.where(and_(*conditions))
     
-    return blogs, total_count
+    # Execute both queries concurrently
+    blogs_result, total_result = await asyncio.gather(
+        session.execute(blogs_query),
+        session.execute(count_query)
+    )
+    
+    blogs = blogs_result.scalars().all()
+    total = total_result.scalar_one()
+    
+    return blogs, total
 
 
 async def get_user_blogs(
