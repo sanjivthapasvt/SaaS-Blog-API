@@ -11,7 +11,8 @@ from app.auth.hashing import hash_password, verify_password
 from app.auth.jwt_handler import (bearer_scheme, create_access_token,
                                   create_refresh_token, decode_token)
 from app.auth.schemas import Token, UserCreate, UserLogin
-from app.auth.security import TokenBlacklist, get_token_blacklist, check_password_strength
+from app.auth.security import (TokenBlacklist, check_password_strength,
+                               get_token_blacklist)
 from app.core.database import get_session
 from app.users.models import User
 
@@ -85,7 +86,10 @@ async def register_user_route(
 
         strong, reasons = check_password_strength(user_data.password)
         if not strong:
-            raise HTTPException(status_code=400, detail={"password": user_data.password, "reasons": reasons}) 
+            raise HTTPException(
+                status_code=400,
+                detail={"password": user_data.password, "reasons": reasons},
+            )
 
         full_name = f"{(user_data.first_name).capitalize()} {(user_data.last_name).capitalize()}"
         new_user = User(
