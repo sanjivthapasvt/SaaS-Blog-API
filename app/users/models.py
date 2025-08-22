@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
 
@@ -21,6 +22,9 @@ class UserFollowLink(SQLModel, table=True):
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    uuid: str = Field(
+        default_factory=lambda: str(uuid.uuid4()), index=True, unique=True
+    )
     profile_pic: Optional[str] = Field(
         default=None,
     )

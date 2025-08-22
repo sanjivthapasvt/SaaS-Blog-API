@@ -7,7 +7,7 @@ class UserRead(BaseModel):
     id: int
     full_name: str
     profile_pic: str | None
-    
+
 
 class UserResponse(BaseModel):
     id: int

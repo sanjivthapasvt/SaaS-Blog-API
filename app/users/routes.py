@@ -1,5 +1,6 @@
 from typing import List
-from fastapi import APIRouter, Depends, Form, Query, UploadFile
+
+from fastapi import APIRouter, Depends, Form, Query, Request, UploadFile
 from fastapi.exceptions import HTTPException
 from fastapi_limiter.depends import RateLimiter
 
@@ -7,15 +8,15 @@ from app.auth.dependency import get_current_user
 from app.blogs.crud import get_user_blogs
 from app.blogs.schema import BlogResponse
 from app.core.database import AsyncSession, get_session
-from app.models.schema import PaginatedResponse, CommonParams
+from app.models.schema import CommonParams, PaginatedResponse
 from app.users.crud import (change_user_password, follow_user, get_user_info,
                             list_followers, list_followings, list_users,
                             unfollow_user, update_user_profile)
 from app.users.models import User
-from app.users.schema import CurrentUserRead, UserChangePassword, UserRead, UserResponse
-from app.utils.rate_limiter import user_identifier
+from app.users.schema import (CurrentUserRead, UserChangePassword, UserRead,
+                              UserResponse)
 from app.utils.common_params import get_common_params
-
+from app.utils.rate_limiter import user_identifier
 
 router = APIRouter()
 
@@ -113,7 +114,7 @@ async def list_current_user_blog_route(
             limit=params.limit,
             offset=params.offset,
             user_id=current_user.id,
-            tags=tags
+            tags=tags,
         )
 
         data = [
@@ -152,7 +153,10 @@ async def list_users_route(
 ):
     try:
         return await list_users(
-            session=session, search=params.search, limit=params.limit, offset=params.offset
+            session=session,
+            search=params.search,
+            limit=params.limit,
+            offset=params.offset,
         )
     except HTTPException:
         raise
@@ -174,15 +178,15 @@ async def list_followers_route(
     session: AsyncSession = Depends(get_session),
 ):
     try:
-        
+
         followers, total = await list_followers(
-            session=session, user_id=user_id, search=params.search, limit=params.limit, offset=params.offset
+            session=session,
+            user_id=user_id,
+            search=params.search,
+            limit=params.limit,
+            offset=params.offset,
         )
-        data = [
-            UserResponse.model_validate(
-                user
-            )for user in followers
-        ]
+        data = [UserResponse.model_validate(user) for user in followers]
         return PaginatedResponse[UserResponse](
             total=total, limit=params.limit, offset=params.offset, data=data
         )
@@ -210,18 +214,19 @@ async def list_followings_route(
     session: AsyncSession = Depends(get_session),
 ):
     try:
-        followings, total =  await list_followings(
-            session=session, user_id=user_id, search=params.search, limit=params.limit, offset=params.offset
+        followings, total = await list_followings(
+            session=session,
+            user_id=user_id,
+            search=params.search,
+            limit=params.limit,
+            offset=params.offset,
         )
-        
-        data = [
-            UserResponse.model_validate(user)
-            for user in followings
-        ]
+
+        data = [UserResponse.model_validate(user) for user in followings]
         return PaginatedResponse[UserResponse](
             total=total, limit=params.limit, offset=params.offset, data=data
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -239,12 +244,13 @@ async def list_followings_route(
 )
 async def follow_user_route(
     user_id: int,
+    request: Request,
     session: AsyncSession = Depends(get_session),
     current_user: CurrentUserRead = Depends(get_current_user),
 ):
     try:
         target_user = await follow_user(
-            session=session, user_id=user_id, current_user=current_user
+            session=session, user_id=user_id, current_user=current_user, request=request
         )
         return {"message": f"You are now following {target_user.full_name}"}
 
@@ -295,7 +301,12 @@ async def list_user_blog_route(
 ):
     try:
         blogs_result, total_result = await get_user_blogs(
-            session=session, search=params.search, limit=params.limit, offset=params.offset, user_id=user_id, tags=tags
+            session=session,
+            search=params.search,
+            limit=params.limit,
+            offset=params.offset,
+            user_id=user_id,
+            tags=tags,
         )
 
         data = [
