@@ -3,15 +3,15 @@ from datetime import datetime, timezone
 from typing import List
 
 from aiosqlite import IntegrityError
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlmodel import and_, col, exists, func, insert, delete, select
+from sqlmodel import and_, col, delete, exists, func, insert, select
 
 from app.blogs.models import Blog, BlogTagLink, Comment, Tag
 from app.models.blog_like_link import BlogLikeLink
 from app.notifications.models import Notification, NotificationType
-from app.notifications.notification_service import create_notification
+from app.notifications.service import create_notification
 from app.users.models import User, UserFollowLink
 from app.users.schema import CurrentUserRead
 from app.utils.remove_image import remove_image
@@ -35,10 +35,10 @@ async def create_new_blog(
     """
     if title.strip() == "":
         raise HTTPException(status_code=422, detail="Title cannot be empty")
-    
+
     if content.strip() == "":
         raise HTTPException(status_code=422, detail="Content cannot be empty")
-    
+
     new_blog = Blog(
         title=title,
         thumbnail_url=thumbnail_url,
@@ -95,7 +95,10 @@ async def create_new_blog(
 
 
 async def like_unlike_blog(
-    session: AsyncSession, blog_id: int, current_user: CurrentUserRead
+    session: AsyncSession,
+    blog_id: int,
+    current_user: CurrentUserRead,
+    request: Request | None = None,
 ):
     """
     Toggle like/unlike status for a blog by the current user.
@@ -116,10 +119,10 @@ async def like_unlike_blog(
 
     if existing_like:
         blog = await session.get(Blog, blog_id)
-        
+
         if not blog:
             raise HTTPException(status_code=404, detail="Blog doesn't exist")
-        
+
         await session.delete(existing_like)
         # Delete notification if not self-like
         if current_user.id != blog.author:
@@ -129,7 +132,7 @@ async def like_unlike_blog(
                         Notification.owner_id == blog.author,
                         Notification.blog_id == blog.id,
                         Notification.notification_type == NotificationType.LIKE,
-                        Notification.triggered_by_user_id == current_user.id
+                        Notification.triggered_by_user_id == current_user.id,
                     )
                 )
             )
@@ -157,6 +160,7 @@ async def like_unlike_blog(
                 blog_id=blog.id,
                 notification_type=NotificationType.LIKE,
                 message=f"{current_user.full_name} liked your blog {blog.title}",
+                request=request,
             )
         return {"detail": "added to liked blogs"}
 
@@ -167,82 +171,70 @@ async def like_unlike_blog(
 
 
 async def get_all_blogs(
-    session: AsyncSession, search: str | None, limit: int, offset: int, tags: List[str] | None
+    session: AsyncSession,
+    search: str | None,
+    limit: int,
+    offset: int,
+    tags: List[str] | None,
 ):
     """
     Retrieve paginated list of blogs, optionally filtered by a search term in the title.
 
     Returns a dict with total count, pagination info, and blog data.
     """
-    
-        
-    base_query = (
-            select(Blog).where(Blog.is_public == True)
-        )
-    
+
+    base_query = select(Blog).where(Blog.is_public == True)
+
     conditions = []
 
     if search:
         search_term = f"%{search.lower()}%"
         conditions.append(func.lower(Blog.title).like(search_term))
-    
 
     # Tag filtering
     if tags:
         # Create a subquery that checks if a blog has all required tags
         tag_subquery = (
             select(BlogTagLink.blog_id)
-            .join(Tag, BlogTagLink.tag_id == Tag.id) # type: ignore
-            .where(
-                and_(
-                    BlogTagLink.blog_id == Blog.id,
-                    col(Tag.title).in_(tags)
-                )
-            )
-            .group_by(BlogTagLink.blog_id) # type: ignore
+            .join(Tag, BlogTagLink.tag_id == Tag.id)  # type: ignore
+            .where(and_(BlogTagLink.blog_id == Blog.id, col(Tag.title).in_(tags)))
+            .group_by(BlogTagLink.blog_id)  # type: ignore
             .having(func.count(func.distinct(Tag.id)) == len(tags))
         )
-        
+
         conditions.append(exists(tag_subquery))
-    
-    
+
     if conditions:
         filtered_query = base_query.where(and_(*conditions))
     else:
         filtered_query = base_query
-        
+
     # main query with pagination
     blogs_query = (
-        filtered_query
-        .options(selectinload(Blog.tags)) # type: ignore
-        .order_by(Blog.id) # type: ignore
+        filtered_query.options(selectinload(Blog.tags))  # type: ignore
+        .order_by(Blog.id)  # type: ignore
         .limit(limit)
         .offset(offset)
     )
 
-   # create count query
-    count_query = (
-        select(func.count(Blog.id)) # type: ignore
-        .where(Blog.is_public == True)
+    # create count query
+    count_query = select(func.count(Blog.id)).where(  # type: ignore
+        Blog.is_public == True
     )
-    
+
     # apply conditions to count query
     if conditions:
         count_query = count_query.where(and_(*conditions))
-    
+
     # Execute both queries concurrently
     blogs_result, total_result = await asyncio.gather(
-        session.execute(blogs_query),
-        session.execute(count_query)
+        session.execute(blogs_query), session.execute(count_query)
     )
-    
+
     blogs = blogs_result.scalars().all()
     total = total_result.scalar_one()
-    
+
     return blogs, total
-
-
-
 
 
 async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
@@ -260,20 +252,25 @@ async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
 
 
 async def get_liked_blogs(
-    session: AsyncSession, search: str | None, limit: int, offset: int, user_id: int, tags: List[str] | None
+    session: AsyncSession,
+    search: str | None,
+    limit: int,
+    offset: int,
+    user_id: int,
+    tags: List[str] | None,
 ):
     """
     Retrieve paginated blogs liked by a user, optionally filtered by a search term.
 
     Returns a dict with total count, pagination info, and blog data.
     """
-        
+
     base_query = (
-            select(Blog)
-            .join(BlogLikeLink, Blog.id == BlogLikeLink.blog_id) # type: ignore
-            .where(BlogLikeLink.user_id == user_id )
-        )
-    
+        select(Blog)
+        .join(BlogLikeLink, Blog.id == BlogLikeLink.blog_id)  # type: ignore
+        .where(BlogLikeLink.user_id == user_id)
+    )
+
     conditions = []
 
     if search:
@@ -285,64 +282,57 @@ async def get_liked_blogs(
         # Create a subquery that checks if a blog has all required tags
         tag_subquery = (
             select(BlogTagLink.blog_id)
-            .join(Tag, BlogTagLink.tag_id == Tag.id) # type: ignore
-            .where(
-                and_(
-                    BlogTagLink.blog_id == Blog.id,
-                    col(Tag.title).in_(tags)
-                )
-            )
-            .group_by(BlogTagLink.blog_id) # type: ignore
+            .join(Tag, BlogTagLink.tag_id == Tag.id)  # type: ignore
+            .where(and_(BlogTagLink.blog_id == Blog.id, col(Tag.title).in_(tags)))
+            .group_by(BlogTagLink.blog_id)  # type: ignore
             .having(func.count(func.distinct(Tag.id)) == len(tags))
         )
-        
+
         conditions.append(exists(tag_subquery))
 
-    
     if conditions:
         filtered_query = base_query.where(and_(*conditions))
     else:
         filtered_query = base_query
-        
+
     # main query with pagination
     blogs_query = (
         filtered_query.where(Blog.is_public)
-        .options(selectinload(Blog.tags)) # type: ignore
-        .order_by(Blog.id) # type: ignore
+        .options(selectinload(Blog.tags))  # type: ignore
+        .order_by(Blog.id)  # type: ignore
         .limit(limit)
         .offset(offset)
     )
 
-   # create count query
+    # create count query
     count_query = (
-        select(func.count(Blog.id)) # type: ignore
-        .join(BlogLikeLink, Blog.id == BlogLikeLink.blog_id) # type: ignore
-        .where(
-            and_(
-                BlogLikeLink.user_id == user_id,
-                Blog.is_public
-            )        
-        )
+        select(func.count(Blog.id))  # type: ignore
+        .join(BlogLikeLink, Blog.id == BlogLikeLink.blog_id)  # type: ignore
+        .where(and_(BlogLikeLink.user_id == user_id, Blog.is_public))
     )
-    
+
     # apply conditions to count query
     if conditions:
         count_query = count_query.where(and_(*conditions))
-    
+
     # Execute both queries concurrently
     blogs_result, total_result = await asyncio.gather(
-        session.execute(blogs_query),
-        session.execute(count_query)
+        session.execute(blogs_query), session.execute(count_query)
     )
-    
+
     blogs = blogs_result.scalars().all()
     total = total_result.scalar_one()
-    
+
     return blogs, total
 
 
 async def get_user_blogs(
-    session: AsyncSession, search: str | None, limit: int, offset: int, user_id: int, tags:List[str] | None
+    session: AsyncSession,
+    search: str | None,
+    limit: int,
+    offset: int,
+    user_id: int,
+    tags: List[str] | None,
 ):
     """
     Retrieve paginated blogs authored by a specific user, optionally filtered by a search term.
@@ -351,9 +341,9 @@ async def get_user_blogs(
     """
     if not await session.get(User, user_id):
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     base_query = select(Blog).where(Blog.author == user_id)
-    
+
     conditions = []
 
     if search:
@@ -365,53 +355,44 @@ async def get_user_blogs(
         # Create a subquery that checks if a blog has all required tags
         tag_subquery = (
             select(BlogTagLink.blog_id)
-            .join(Tag, BlogTagLink.tag_id == Tag.id) # type: ignore
-            .where(
-                and_(
-                    BlogTagLink.blog_id == Blog.id,
-                    col(Tag.title).in_(tags)
-                )
-            )
-            .group_by(BlogTagLink.blog_id) # type: ignore
+            .join(Tag, BlogTagLink.tag_id == Tag.id)  # type: ignore
+            .where(and_(BlogTagLink.blog_id == Blog.id, col(Tag.title).in_(tags)))
+            .group_by(BlogTagLink.blog_id)  # type: ignore
             .having(func.count(func.distinct(Tag.id)) == len(tags))
         )
-        
+
         conditions.append(exists(tag_subquery))
 
-    
     if conditions:
         filtered_query = base_query.where(and_(*conditions))
     else:
         filtered_query = base_query
-        
+
     # main query with pagination
     blogs_query = (
-        filtered_query
-        .options(selectinload(Blog.tags)) # type: ignore
-        .order_by(Blog.id) # type: ignore
+        filtered_query.options(selectinload(Blog.tags))  # type: ignore
+        .order_by(Blog.id)  # type: ignore
         .limit(limit)
         .offset(offset)
     )
 
-   # create count query
-    count_query = (
-        select(func.count(Blog.id))  # type: ignore
-        .where(Blog.author == user_id)
+    # create count query
+    count_query = select(func.count(Blog.id)).where(  # type: ignore
+        Blog.author == user_id
     )
-    
+
     # apply conditions to count query
     if conditions:
         count_query = count_query.where(and_(*conditions))
-    
+
     # Execute both queries concurrently
     blogs_result, total_result = await asyncio.gather(
-        session.execute(blogs_query),
-        session.execute(count_query)
+        session.execute(blogs_query), session.execute(count_query)
     )
-    
+
     blogs = blogs_result.scalars().all()
     total = total_result.scalar_one()
-    
+
     return blogs, total
 
 
@@ -484,7 +465,7 @@ async def delete_blog(blog_id: int, session: AsyncSession, current_user: int):
         await remove_image(blog.thumbnail_url)
 
     # Delete related comments
-    await session.execute(delete(Comment).where(Comment.blog_id == blog_id)) # type: ignore
+    await session.execute(delete(Comment).where(Comment.blog_id == blog_id))  # type: ignore
     # Delete the blog itself
     await session.delete(blog)
     await session.commit()
@@ -507,12 +488,11 @@ async def create_comment(
     """
     if content.strip() == "":
         raise HTTPException(status_code=400, detail="The field cannot be empty")
-    
-    
+
     blog = await session.get(Blog, blog_id)
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
-    
+
     new_comment = Comment(blog_id=blog_id, content=content, commented_by=commented_by)
 
     session.add(new_comment)
@@ -549,13 +529,13 @@ async def update_comment(
     """
     if content.strip() == "":
         raise HTTPException(status_code=400, detail="The field cannot be empty")
-    
+
     raw_comment = await session.execute(select(Comment).where(Comment.id == comment_id))
     comment = raw_comment.scalars().first()
 
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
-    
+
     if comment.commented_by != current_user:
         raise HTTPException(
             status_code=403, detail="You are not the owner of the comment"

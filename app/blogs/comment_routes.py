@@ -80,7 +80,7 @@ async def update_comment_route(
         )
     except HTTPException:
         raise
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Something went wrong{str(e)}")
 

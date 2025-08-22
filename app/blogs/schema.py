@@ -29,5 +29,6 @@ class CommentData(BaseModel):
     commmented_by: int
     created_at: datetime
 
+
 class CommentWrite(BaseModel):
     content: Annotated[str, StringConstraints(min_length=1, max_length=500)]
