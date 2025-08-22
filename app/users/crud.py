@@ -1,12 +1,11 @@
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import func, select
 
 from app.auth.hashing import hash_password, verify_password
 from app.auth.security import check_password_strength
 from app.notifications.models import Notification
-from app.notifications.notification_service import (NotificationType,
-                                                    create_notification)
+from app.notifications.service import NotificationType, create_notification
 from app.users.models import User, UserFollowLink
 from app.users.schema import CurrentUserRead
 from app.utils.remove_image import remove_image
@@ -36,10 +35,11 @@ async def change_user_password(
                 status_code=400, detail="Your old password doesn't match"
             )
 
-
     strong, reasons = check_password_strength(new_password)
     if not strong:
-        raise HTTPException(status_code=400, detail={"password": new_password, "reasons": reasons}) 
+        raise HTTPException(
+            status_code=400, detail={"password": new_password, "reasons": reasons}
+        )
 
     if new_password != again_new_password:
         raise HTTPException(status_code=400, detail="New passwords doesn't match")
@@ -77,7 +77,9 @@ async def update_user_profile(
     await session.refresh(current_user)
 
 
-async def list_users(search: str | None, limit: int, offset: int, session: AsyncSession):
+async def list_users(
+    search: str | None, limit: int, offset: int, session: AsyncSession
+):
     query = select(User)
     total_query = select(func.count()).select_from(User)
 
@@ -104,13 +106,13 @@ async def list_followers(
 ):
     if not await session.get(User, user_id):
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     base_query = (
         select(User)
-        .join(UserFollowLink, User.id == UserFollowLink.follower_id) # type: ignore
+        .join(UserFollowLink, User.id == UserFollowLink.follower_id)  # type: ignore
         .where(UserFollowLink.following_id == user_id)
     )
-    
+
     if search:
         search_term = f"%{search.lower()}%"
         condition = func.lower(User.full_name).like(search_term)
@@ -119,14 +121,9 @@ async def list_followers(
     total_query = select(func.count()).select_from(base_query.subquery())
     total_result = await session.execute(total_query)
     total_count = total_result.scalar() or 0
-    
-    followers_query = (
-        base_query
-        .limit(limit)
-        .offset(offset)
-        .order_by(User.full_name)
-    )
-    
+
+    followers_query = base_query.limit(limit).offset(offset).order_by(User.full_name)
+
     followers_result = await session.execute(followers_query)
     followers = followers_result.scalars().all()
 
@@ -138,10 +135,10 @@ async def list_followings(
 ):
     if not await session.get(User, user_id):
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     base_query = (
         select(User)
-        .join(UserFollowLink, User.id == UserFollowLink.following_id) # type: ignore
+        .join(UserFollowLink, User.id == UserFollowLink.following_id)  # type: ignore
         .where(UserFollowLink.follower_id == user_id)
     )
 
@@ -153,21 +150,20 @@ async def list_followings(
     total_query = select(func.count()).select_from(base_query.subquery())
     total_result = await session.execute(total_query)
     total_count = total_result.scalar() or 0
-    
-    followings_query = (
-        base_query
-        .limit(limit)
-        .offset(offset)
-        .order_by(User.full_name)
-    )
-    
+
+    followings_query = base_query.limit(limit).offset(offset).order_by(User.full_name)
+
     followings_result = await session.execute(followings_query)
     followings = followings_result.scalars().all()
 
     return followings, total_count
 
+
 async def follow_user(
-    user_id: int, session: AsyncSession, current_user: CurrentUserRead
+    user_id: int,
+    session: AsyncSession,
+    current_user: CurrentUserRead,
+    request: Request | None = None,
 ) -> User:
     target_user = await session.get(User, user_id)
 
@@ -206,6 +202,7 @@ async def follow_user(
             message=f"{current_user.full_name} started following you",
             notification_type=NotificationType.FOLLOW,
             blog_id=None,
+            request=request,
         )
 
     newlink = UserFollowLink(follower_id=current_user.id, following_id=target_user.id)

@@ -58,7 +58,7 @@ async def get_google_login_url():
 
 
 # The google redirect uri should be same as path here
-# In my case In google I have set GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+# In my case In google I have set GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
 # The google returns access_token and we can use it to get user info including id, email, name and picture
 @router.get(
     "/google/callback", dependencies=[Depends(RateLimiter(times=5, minutes=15))]
@@ -140,7 +140,7 @@ async def auth_google(code: str, session: AsyncSession = Depends(get_session)):
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
-            "token_type": "bearer"
+            "token_type": "bearer",
         }
 
     except HTTPException:

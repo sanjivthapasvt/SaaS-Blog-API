@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -33,6 +33,53 @@ async def get_current_user(
     Validates token and checks blacklist.
     """
     token = credentials.credentials
+    payload = decode_token(token, expected_type="access")
+
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Check if token is blacklisted
+    jti = payload.get("jti")
+    if jti:
+        blacklist = await get_token_blacklist(request)
+        if await blacklist.is_blacklisted(jti):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    sub = payload.get("sub")
+    if not sub:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = await get_user_by_identifier(session, sub)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    return user
+
+
+async def get_current_user_from_query(
+    request: Request,
+    token: str = Query(...),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Get current authenticated user from JWT token passed in query params.
+    """
     payload = decode_token(token, expected_type="access")
 
     if not payload:

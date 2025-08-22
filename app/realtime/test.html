@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SSE Notifications Debug Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      h1 {
+        margin-bottom: 10px;
+      }
+      #notifications {
+        list-style: none;
+        padding: 0;
+      }
+      #notifications li {
+        background: #f1f1f1;
+        margin-bottom: 5px;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .debug {
+        background: #e3f2fd !important;
+        border-left: 4px solid #2196F3;
+      }
+      .error {
+        background: #ffebee !important;
+        color: #c62828;
+      }
+      .connected {
+        background: #e8f5e8 !important;
+        color: #2e7d32;
+      }
+      .heartbeat {
+        background: #fff3e0 !important;
+        color: #f57c00;
+        font-size: 12px;
+      }
+      .notification {
+        background: #f3e5f5 !important;
+        border-left: 4px solid #9c27b0;
+      }
+      #status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SSE Notifications Debug Test</h1>
+    <div id="status">Initializing...</div>
+    <ul id="notifications"></ul>
+
+    <script>
+      const token2 =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTE0Mzg0NTQ3MDAwNzcwNDYwODgiLCJleHAiOjE3NTU4NjU5NTksInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI1MmViOTcwMy02MTFiLTQ3MzItOGMzMC01OWRlYjczOTA4NDUifQ.99kinYW7Fd1Tam8wnFk0cz-bS4cAEE4cr6lPwQWm4rk";
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMDk2MzE3NTE4OTA1ODUzMDM0MzciLCJleHAiOjE3NTU4NjU5MjIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJlZDIwZDUwOS1hYmNiLTQ3OWItODk4My1kNmJmYTNhYmE3YzQifQ.Xe5LVb1emxx6QH_ly2152A_mUrMHQ4DqwyYiL4tS4TE";
+      
+      const statusDiv = document.getElementById("status");
+      const notificationsList = document.getElementById("notifications");
+
+      function addMessage(message, className = '') {
+        const li = document.createElement("li");
+        li.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        if (className) li.className = className;
+        notificationsList.appendChild(li);
+        console.log(message);
+      }
+
+      function updateStatus(status, className = '') {
+        statusDiv.textContent = status;
+        statusDiv.className = className;
+      }
+
+      updateStatus("Connecting...", "debug");
+      addMessage("Attempting to connect to SSE endpoint...", "debug");
+
+      const eventSource = new EventSource(
+        `http://localhost:8000/api/sse/notifications?token=${token2}`
+      );
+
+      // Log the readyState
+      addMessage(`Initial readyState: ${eventSource.readyState}`, "debug");
+
+      // Connection opened
+      eventSource.onopen = (event) => {
+        addMessage("SSE connection opened successfully", "connected");
+        updateStatus("Connected", "connected");
+      };
+
+      // Connection confirmation
+      eventSource.addEventListener("connected", (event) => {
+        addMessage("Received 'connected' event from server", "connected");
+        addMessage(`Connected event data: ${event.data}`, "debug");
+      });
+
+      // Incoming notifications
+      eventSource.addEventListener("notification", (event) => {
+        addMessage("🔔 NOTIFICATION RECEIVED!", "notification");
+        addMessage(`Notification data: ${event.data}`, "debug");
+        
+        try {
+          const notification = JSON.parse(event.data);
+          addMessage(`Message: ${notification.message}`, "notification");
+          addMessage(`Type: ${notification.type}`, "debug");
+          addMessage(`ID: ${notification.id}`, "debug");
+        } catch (e) {
+          addMessage(`Error parsing notification: ${e.message}`, "error");
+        }
+      });
+
+      // Heartbeat messages
+      eventSource.addEventListener("heartbeat", (event) => {
+        addMessage("❤️ Heartbeat received", "heartbeat");
+        addMessage(`Heartbeat data: ${event.data}`, "debug");
+      });
+
+      // Generic message handler (catches all events)
+      eventSource.onmessage = (event) => {
+        addMessage(`Generic message received: ${event.data}`, "debug");
+      };
+
+      // Error handling
+      eventSource.onerror = (error) => {
+        addMessage("❌ SSE connection error occurred", "error");
+        addMessage(`ReadyState: ${eventSource.readyState}`, "error");
+        updateStatus("Connection Error", "error");
+        
+        if (eventSource.readyState === EventSource.CLOSED) {
+          addMessage("Connection is closed", "error");
+        } else if (eventSource.readyState === EventSource.CONNECTING) {
+          addMessage("Attempting to reconnect...", "debug");
+          updateStatus("Reconnecting...", "debug");
+        }
+      };
+
+      // Log readyState changes
+      setInterval(() => {
+        const currentState = eventSource.readyState;
+        const states = {
+          0: "CONNECTING",
+          1: "OPEN", 
+          2: "CLOSED"
+        };
+        // Only log if state changed (you'd need to track previous state)
+      }, 1000);
+
+      // Add a test button to manually check connection
+      const testButton = document.createElement('button');
+      testButton.textContent = 'Test Connection Status';
+      testButton.onclick = () => {
+        const states = {
+          0: "CONNECTING",
+          1: "OPEN", 
+          2: "CLOSED"
+        };
+        addMessage(`Current readyState: ${eventSource.readyState} (${states[eventSource.readyState]})`, "debug");
+        addMessage(`URL: ${eventSource.url}`, "debug");
+      };
+      document.body.insertBefore(testButton, notificationsList);
+    </script>
+  </body>
+</html>

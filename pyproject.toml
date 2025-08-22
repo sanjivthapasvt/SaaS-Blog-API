@@ -17,6 +17,7 @@ dependencies = [
     "gunicorn>=23.0.0",
     "httpx>=0.28.1",
     "isort>=6.0.1",
+    "nanoid>=2.0.0",
     "passlib[bcrypt]>=1.7.4",
     "pyjwt>=2.10.1",
     "pyproject-toml>=0.1.0",
@@ -25,6 +26,8 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.20",
+    "slugify>=0.0.1",
     "sqlmodel>=0.0.24",
+    "sse-starlette>=3.0.2",
     "trio>=0.30.0",
 ]

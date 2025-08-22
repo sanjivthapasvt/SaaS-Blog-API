@@ -42,13 +42,13 @@ async def get_token_blacklist(request: Request) -> TokenBlacklist:
 
 def check_password_strength(password: str) -> tuple[bool, list[str]]:
     reasons = []
-    
+
     if len(password) < 8:
         reasons.append("Password must be at least 8 characters long.")
-    
+
     has_upper = has_lower = has_digit = has_special = False
-    specials = set("!@#$%^&*(),.?\":{}|<>")
-    
+    specials = set('!@#$%^&*(),.?":{}|<>')
+
     for ch in password:
         if ch.isupper():
             has_upper = True
@@ -58,7 +58,7 @@ def check_password_strength(password: str) -> tuple[bool, list[str]]:
             has_digit = True
         elif ch in specials:
             has_special = True
-    
+
     if not has_upper:
         reasons.append("Password must contain at least one uppercase letter.")
     if not has_lower:
@@ -67,5 +67,5 @@ def check_password_strength(password: str) -> tuple[bool, list[str]]:
         reasons.append("Password must contain at least one digit.")
     if not has_special:
         reasons.append("Password must contain at least one special character.")
-    
+
     return (len(reasons) == 0, reasons)
