@@ -11,7 +11,8 @@ class PaginatedResponse(BaseModel, Generic[T]):
     offset: int
     data: List[T]
 
+
 class CommonParams(BaseModel):
-    search:str | None
+    search: str | None
     limit: int
     offset: int
