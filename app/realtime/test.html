@@ -1,169 +1,510 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SSE Notifications Debug Test</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSE Notifications Debug Tool</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        padding: 20px;
-      }
-      h1 {
-        margin-bottom: 10px;
-      }
-      #notifications {
-        list-style: none;
-        padding: 0;
-      }
-      #notifications li {
-        background: #f1f1f1;
-        margin-bottom: 5px;
-        padding: 10px;
-        border-radius: 4px;
-      }
-      .debug {
-        background: #e3f2fd !important;
-        border-left: 4px solid #2196F3;
-      }
-      .error {
-        background: #ffebee !important;
-        color: #c62828;
-      }
-      .connected {
-        background: #e8f5e8 !important;
-        color: #2e7d32;
-      }
-      .heartbeat {
-        background: #fff3e0 !important;
-        color: #f57c00;
-        font-size: 12px;
-      }
-      .notification {
-        background: #f3e5f5 !important;
-        border-left: 4px solid #9c27b0;
-      }
-      #status {
-        padding: 10px;
-        margin: 10px 0;
-        border-radius: 4px;
-        font-weight: bold;
-      }
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin: 0 0 30px 0;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        #status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .status-connecting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f1b0b7;
+        }
+
+        .status-disconnected {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+
+        .messages-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .messages {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .message {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .message:last-child {
+            border-bottom: none;
+        }
+
+        .message-debug {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            color: #1565c0;
+        }
+
+        .message-error {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            color: #c62828;
+        }
+
+        .message-connected {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+            color: #2e7d32;
+        }
+
+        .message-heartbeat {
+            background: #fff8e1;
+            border-left: 4px solid #ff9800;
+            color: #ef6c00;
+            opacity: 0.8;
+        }
+
+        .message-notification {
+            background: #f3e5f5;
+            border-left: 4px solid #9c27b0;
+            color: #7b1fa2;
+        }
+
+        .timestamp {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            input[type="text"] {
+                width: 100%;
+            }
+            
+            .stats {
+                justify-content: center;
+            }
+        }
     </style>
-  </head>
-  <body>
-    <h1>SSE Notifications Debug Test</h1>
-    <div id="status">Initializing...</div>
-    <ul id="notifications"></ul>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 SSE Notifications Debug Tool</h1>
+        
+        <div class="controls">
+            <input 
+                type="text" 
+                id="tokenInput" 
+                placeholder="Enter your authentication token"
+                value=""
+            >
+            <button id="connectBtn" class="btn-primary">Connect</button>
+            <button id="disconnectBtn" class="btn-danger" disabled>Disconnect</button>
+            <button id="clearBtn" class="btn-secondary">Clear Log</button>
+            <button id="testBtn" class="btn-secondary" disabled>Test Status</button>
+        </div>
+
+        <div id="status" class="status-disconnected">Ready to connect</div>
+
+        <div class="messages-container">
+            <ul id="messages" class="messages"></ul>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="connectionCount">0</div>
+                <div class="stat-label">Connections</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="messageCount">0</div>
+                <div class="stat-label">Messages</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="notificationCount">0</div>
+                <div class="stat-label">Notifications</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="heartbeatCount">0</div>
+                <div class="stat-label">Heartbeats</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="errorCount">0</div>
+                <div class="stat-label">Errors</div>
+            </div>
+        </div>
+    </div>
 
     <script>
-      const token2 =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMTE0Mzg0NTQ3MDAwNzcwNDYwODgiLCJleHAiOjE3NTU4NjU5NTksInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI1MmViOTcwMy02MTFiLTQ3MzItOGMzMC01OWRlYjczOTA4NDUifQ.99kinYW7Fd1Tam8wnFk0cz-bS4cAEE4cr6lPwQWm4rk";
-      const token =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMDk2MzE3NTE4OTA1ODUzMDM0MzciLCJleHAiOjE3NTU4NjU5MjIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJlZDIwZDUwOS1hYmNiLTQ3OWItODk4My1kNmJmYTNhYmE3YzQifQ.Xe5LVb1emxx6QH_ly2152A_mUrMHQ4DqwyYiL4tS4TE";
-      
-      const statusDiv = document.getElementById("status");
-      const notificationsList = document.getElementById("notifications");
+        class SSEDebugger {
+            constructor() {
+                this.eventSource = null;
+                this.isConnected = false;
+                this.stats = {
+                    connections: 0,
+                    messages: 0,
+                    notifications: 0,
+                    heartbeats: 0,
+                    errors: 0
+                };
+                this.lastReadyState = null;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 5;
+                
+                this.initializeElements();
+                this.bindEvents();
+            }
 
-      function addMessage(message, className = '') {
-        const li = document.createElement("li");
-        li.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-        if (className) li.className = className;
-        notificationsList.appendChild(li);
-        console.log(message);
-      }
+            initializeElements() {
+                this.elements = {
+                    tokenInput: document.getElementById('tokenInput'),
+                    connectBtn: document.getElementById('connectBtn'),
+                    disconnectBtn: document.getElementById('disconnectBtn'),
+                    clearBtn: document.getElementById('clearBtn'),
+                    testBtn: document.getElementById('testBtn'),
+                    status: document.getElementById('status'),
+                    messages: document.getElementById('messages'),
+                    connectionCount: document.getElementById('connectionCount'),
+                    messageCount: document.getElementById('messageCount'),
+                    notificationCount: document.getElementById('notificationCount'),
+                    heartbeatCount: document.getElementById('heartbeatCount'),
+                    errorCount: document.getElementById('errorCount')
+                };
+            }
 
-      function updateStatus(status, className = '') {
-        statusDiv.textContent = status;
-        statusDiv.className = className;
-      }
+            bindEvents() {
+                this.elements.connectBtn.addEventListener('click', () => this.connect());
+                this.elements.disconnectBtn.addEventListener('click', () => this.disconnect());
+                this.elements.clearBtn.addEventListener('click', () => this.clearMessages());
+                this.elements.testBtn.addEventListener('click', () => this.testConnectionStatus());
+                
+                this.elements.tokenInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !this.isConnected) {
+                        this.connect();
+                    }
+                });
+            }
 
-      updateStatus("Connecting...", "debug");
-      addMessage("Attempting to connect to SSE endpoint...", "debug");
+            connect() {
+                const token = this.elements.tokenInput.value.trim();
+                if (!token) {
+                    this.addMessage('❌ Please enter a token', 'error');
+                    return;
+                }
 
-      const eventSource = new EventSource(
-        `http://localhost:8000/api/sse/notifications?token=${token2}`
-      );
+                if (this.eventSource) {
+                    this.disconnect();
+                }
 
-      // Log the readyState
-      addMessage(`Initial readyState: ${eventSource.readyState}`, "debug");
+                this.updateStatus('Connecting...', 'connecting');
+                this.addMessage('🔌 Attempting to connect to SSE endpoint...', 'debug');
 
-      // Connection opened
-      eventSource.onopen = (event) => {
-        addMessage("SSE connection opened successfully", "connected");
-        updateStatus("Connected", "connected");
-      };
+                const url = `http://localhost:8000/api/sse/notifications?token=${encodeURIComponent(token)}`;
+                this.eventSource = new EventSource(url);
+                this.lastReadyState = this.eventSource.readyState;
 
-      // Connection confirmation
-      eventSource.addEventListener("connected", (event) => {
-        addMessage("Received 'connected' event from server", "connected");
-        addMessage(`Connected event data: ${event.data}`, "debug");
-      });
+                this.setupEventListeners();
+                this.updateUI(true);
+            }
 
-      // Incoming notifications
-      eventSource.addEventListener("notification", (event) => {
-        addMessage("🔔 NOTIFICATION RECEIVED!", "notification");
-        addMessage(`Notification data: ${event.data}`, "debug");
-        
-        try {
-          const notification = JSON.parse(event.data);
-          addMessage(`Message: ${notification.message}`, "notification");
-          addMessage(`Type: ${notification.type}`, "debug");
-          addMessage(`ID: ${notification.id}`, "debug");
-        } catch (e) {
-          addMessage(`Error parsing notification: ${e.message}`, "error");
+            setupEventListeners() {
+                this.eventSource.onopen = (event) => {
+                    this.isConnected = true;
+                    this.reconnectAttempts = 0;
+                    this.stats.connections++;
+                    this.updateStats();
+                    this.addMessage('✅ SSE connection opened successfully', 'connected');
+                    this.updateStatus('Connected', 'connected');
+                };
+
+                this.eventSource.addEventListener('connected', (event) => {
+                    this.addMessage('🤝 Received connection confirmation from server', 'connected');
+                    if (event.data) {
+                        this.addMessage(`Connection data: ${event.data}`, 'debug');
+                    }
+                });
+
+                this.eventSource.addEventListener('notification', (event) => {
+                    this.stats.notifications++;
+                    this.updateStats();
+                    this.addMessage('🔔 NOTIFICATION RECEIVED!', 'notification');
+                    
+                    try {
+                        const notification = JSON.parse(event.data);
+                        this.addMessage(`📝 Message: ${notification.message}`, 'notification');
+                        if (notification.type) {
+                            this.addMessage(`🏷️ Type: ${notification.type}`, 'debug');
+                        }
+                        if (notification.id) {
+                            this.addMessage(`🆔 ID: ${notification.id}`, 'debug');
+                        }
+                    } catch (e) {
+                        this.addMessage(`⚠️ Error parsing notification: ${e.message}`, 'error');
+                        this.addMessage(`Raw data: ${event.data}`, 'debug');
+                    }
+                });
+
+                this.eventSource.addEventListener('heartbeat', (event) => {
+                    this.stats.heartbeats++;
+                    this.updateStats();
+                    this.addMessage('💓 Heartbeat received', 'heartbeat');
+                });
+
+                this.eventSource.onmessage = (event) => {
+                    this.stats.messages++;
+                    this.updateStats();
+                    this.addMessage(`📨 Generic message: ${event.data}`, 'debug');
+                };
+
+                this.eventSource.onerror = (error) => {
+                    this.stats.errors++;
+                    this.updateStats();
+                    this.addMessage('❌ SSE connection error occurred', 'error');
+                    
+                    const readyState = this.eventSource.readyState;
+                    const states = { 0: 'CONNECTING', 1: 'OPEN', 2: 'CLOSED' };
+                    this.addMessage(`Connection state: ${readyState} (${states[readyState]})`, 'error');
+
+                    if (readyState === EventSource.CLOSED) {
+                        this.isConnected = false;
+                        this.updateStatus('Connection Closed', 'error');
+                        this.updateUI(false);
+                        this.addMessage('🔌 Connection is closed', 'error');
+                        
+                        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                            this.attemptReconnect();
+                        }
+                    } else if (readyState === EventSource.CONNECTING) {
+                        this.updateStatus('Reconnecting...', 'connecting');
+                        this.addMessage('🔄 Attempting to reconnect...', 'debug');
+                    }
+                };
+            }
+
+            attemptReconnect() {
+                this.reconnectAttempts++;
+                const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 10000);
+                
+                this.addMessage(`🔄 Auto-reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`, 'debug');
+                
+                setTimeout(() => {
+                    if (!this.isConnected && this.reconnectAttempts <= this.maxReconnectAttempts) {
+                        this.connect();
+                    }
+                }, delay);
+            }
+
+            disconnect() {
+                if (this.eventSource) {
+                    this.eventSource.close();
+                    this.eventSource = null;
+                }
+                this.isConnected = false;
+                this.reconnectAttempts = 0;
+                this.updateStatus('Disconnected', 'disconnected');
+                this.updateUI(false);
+                this.addMessage('🔌 Disconnected from SSE endpoint', 'debug');
+            }
+
+            testConnectionStatus() {
+                if (!this.eventSource) {
+                    this.addMessage('❌ No active connection', 'error');
+                    return;
+                }
+
+                const states = { 0: 'CONNECTING', 1: 'OPEN', 2: 'CLOSED' };
+                const readyState = this.eventSource.readyState;
+                
+                this.addMessage(`🔍 Connection Status Check:`, 'debug');
+                this.addMessage(`   State: ${readyState} (${states[readyState]})`, 'debug');
+                this.addMessage(`   URL: ${this.eventSource.url}`, 'debug');
+                this.addMessage(`   Reconnect attempts: ${this.reconnectAttempts}`, 'debug');
+            }
+
+            addMessage(message, type = '') {
+                const li = document.createElement('li');
+                li.className = `message ${type ? `message-${type}` : ''}`;
+                
+                const timestamp = new Date().toLocaleTimeString();
+                li.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+                
+                this.elements.messages.appendChild(li);
+                this.elements.messages.parentElement.scrollTop = this.elements.messages.parentElement.scrollHeight;
+                
+                console.log(`[${timestamp}] ${message}`);
+            }
+
+            updateStatus(status, className = '') {
+                this.elements.status.textContent = status;
+                this.elements.status.className = className ? `status-${className}` : '';
+            }
+
+            updateUI(connecting) {
+                this.elements.connectBtn.disabled = connecting;
+                this.elements.disconnectBtn.disabled = !connecting;
+                this.elements.testBtn.disabled = !connecting;
+                this.elements.tokenInput.disabled = connecting;
+            }
+
+            clearMessages() {
+                this.elements.messages.innerHTML = '';
+                this.addMessage('🧹 Message log cleared', 'debug');
+            }
+
+            updateStats() {
+                this.elements.connectionCount.textContent = this.stats.connections;
+                this.elements.messageCount.textContent = this.stats.messages;
+                this.elements.notificationCount.textContent = this.stats.notifications;
+                this.elements.heartbeatCount.textContent = this.stats.heartbeats;
+                this.elements.errorCount.textContent = this.stats.errors;
+            }
         }
-      });
 
-      // Heartbeat messages
-      eventSource.addEventListener("heartbeat", (event) => {
-        addMessage("❤️ Heartbeat received", "heartbeat");
-        addMessage(`Heartbeat data: ${event.data}`, "debug");
-      });
-
-      // Generic message handler (catches all events)
-      eventSource.onmessage = (event) => {
-        addMessage(`Generic message received: ${event.data}`, "debug");
-      };
-
-      // Error handling
-      eventSource.onerror = (error) => {
-        addMessage("❌ SSE connection error occurred", "error");
-        addMessage(`ReadyState: ${eventSource.readyState}`, "error");
-        updateStatus("Connection Error", "error");
-        
-        if (eventSource.readyState === EventSource.CLOSED) {
-          addMessage("Connection is closed", "error");
-        } else if (eventSource.readyState === EventSource.CONNECTING) {
-          addMessage("Attempting to reconnect...", "debug");
-          updateStatus("Reconnecting...", "debug");
-        }
-      };
-
-      // Log readyState changes
-      setInterval(() => {
-        const currentState = eventSource.readyState;
-        const states = {
-          0: "CONNECTING",
-          1: "OPEN", 
-          2: "CLOSED"
-        };
-        // Only log if state changed (you'd need to track previous state)
-      }, 1000);
-
-      // Add a test button to manually check connection
-      const testButton = document.createElement('button');
-      testButton.textContent = 'Test Connection Status';
-      testButton.onclick = () => {
-        const states = {
-          0: "CONNECTING",
-          1: "OPEN", 
-          2: "CLOSED"
-        };
-        addMessage(`Current readyState: ${eventSource.readyState} (${states[eventSource.readyState]})`, "debug");
-        addMessage(`URL: ${eventSource.url}`, "debug");
-      };
-      document.body.insertBefore(testButton, notificationsList);
+        // Initialize the debugger when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.sseDebugger = new SSEDebugger();
+        });
     </script>
-  </body>
+</body>
 </html>
