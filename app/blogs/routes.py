@@ -30,6 +30,7 @@ thumbnail_path: str = "blogs/thumbnail"
     ],
 )
 async def create_blog_route(
+    request: Request,
     title: str = Form(..., max_length=500),
     content: str = Form(...),
     tags: str | None = Form(None),
@@ -43,6 +44,7 @@ async def create_blog_route(
         thumbnail_url = await save_image(thumbnail, thumbnail_path)
         new_blog = await create_new_blog(
             session=session,
+            request=request,
             title=title,
             thumbnail_url=thumbnail_url,
             content=content,
