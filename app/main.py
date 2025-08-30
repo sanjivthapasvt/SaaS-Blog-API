@@ -90,3 +90,7 @@ app.include_router(comment_router, prefix="/api", tags=["Comments"])
 app.include_router(notification_router, prefix="/api", tags=["Notification"])
 app.include_router(realtime_router, prefix="/api", tags=["Realtime"])
 app.include_router(users_router, prefix="/api", tags=["Users"])
+
+@app.get("/ping")
+async def ping_server():
+    return {"ping": "pong"}
