@@ -7,7 +7,7 @@ from sqlmodel import SQLModel
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///database.db")  # for dev
 
-engine = create_async_engine(DATABASE_URL, echo=False)
+engine = create_async_engine(DATABASE_URL, echo=False, pool_size=10, max_overflow=5,)
 
 
 AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
