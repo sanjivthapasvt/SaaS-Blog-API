@@ -9,7 +9,7 @@ from app.blogs.crud import get_user_blogs
 from app.blogs.schema import BlogResponse
 from app.core.database import AsyncSession, get_session
 from app.models.schema import CommonParams, PaginatedResponse
-from app.users.crud import (change_user_password, follow_user, get_user_info,
+from app.users.crud import (change_user_password, follow_user, get_user_bookmarks, get_user_info,
                             list_followers, list_followings, list_users,
                             unfollow_user, update_user_profile)
 from app.users.models import User
@@ -132,6 +132,44 @@ async def list_current_user_blog_route(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{str(e)}")
+
+
+@router.get(
+    "/users/me/bookmarks",
+    dependencies=[
+        Depends(RateLimiter(times=10, minutes=1, identifier=user_identifier))
+    ],
+)
+async def list_bookmarks_route(
+    params: CommonParams = Depends(get_common_params),
+    session: AsyncSession = Depends(get_session),
+    current_user: UserRead = Depends(get_current_user),
+):
+    try:
+        blogs, total = await get_user_bookmarks(
+            session=session,
+            search=params.search,
+            limit=params.limit,
+            offset=params.offset,
+            user_id=current_user.id,
+        )
+
+
+        data = [
+            BlogResponse.model_validate(
+                blog.model_copy(update={"tags": [tag.title for tag in blog.tags]})
+            )
+            for blog in blogs
+        ]
+
+        return PaginatedResponse[BlogResponse](
+            total=total, limit=params.limit, offset=params.offset, data=data
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Something went wrong while listing bookmark {str(e)}")
 
 
 ################################################
