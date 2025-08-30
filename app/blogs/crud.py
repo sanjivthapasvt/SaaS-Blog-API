@@ -57,7 +57,7 @@ async def create_new_blog(
         )
     )
     followers_ids: List[int] = list(followers.scalars().all())
-    
+
     await create_notifications(
         request=request,
         session=session,
@@ -65,10 +65,9 @@ async def create_new_blog(
         triggered_by_user_id=current_user.id,
         notification_type=NotificationType.NEW_BLOG,
         blog_id=new_blog.id,
-        message=f"{current_user.full_name} uploaded new blog {new_blog.title}"
+        message=f"{current_user.full_name} uploaded new blog {new_blog.title}",
     )
     # creating notificatoin for all users in single query
-    
 
     if tags:
         # split tags by #
@@ -325,27 +324,32 @@ async def get_liked_blogs(
 async def add_blog_to_bookmark(
     session: AsyncSession,
     user_id: int,
-    blog_id:int,
+    blog_id: int,
 ):
     user, blog = await asyncio.gather(
         session.get(User, user_id), session.get(Blog, blog_id)
-    ) 
+    )
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
 
-    bookmark = await session.execute(select(BookMark).where((BookMark.blog_id == blog_id) & (BookMark.user_id == user_id)))
+    bookmark = await session.execute(
+        select(BookMark).where(
+            (BookMark.blog_id == blog_id) & (BookMark.user_id == user_id)
+        )
+    )
     existing_bookmarks = bookmark.scalars().first()
     if existing_bookmarks:
         await session.delete(existing_bookmarks)
         await session.commit()
         return {"detail": "Successfully removed from bookmark"}
-    
+
     new_bookmark = BookMark(user_id=user_id, blog_id=blog_id)
     session.add(new_bookmark)
     await session.commit()
     return {"detail": "Successfully added to bookmark"}
+
 
 async def get_user_blogs(
     session: AsyncSession,

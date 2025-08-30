@@ -7,9 +7,9 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependency import get_current_user
-from app.blogs.crud import (add_blog_to_bookmark, create_new_blog, delete_blog, get_all_blogs,
-                            get_blog_by_id, get_liked_blogs, like_unlike_blog,
-                            update_blog)
+from app.blogs.crud import (add_blog_to_bookmark, create_new_blog, delete_blog,
+                            get_all_blogs, get_blog_by_id, get_liked_blogs,
+                            like_unlike_blog, update_blog)
 from app.blogs.schema import BlogContentResponse, BlogResponse
 from app.core.database import get_session
 from app.models.schema import CommonParams, PaginatedResponse
@@ -89,6 +89,7 @@ async def like_unlike_blog_route(
             status_code=500, detail=f"Something went wrong while liking post {str(e)}"
         )
 
+
 @router.post("/blogs/{blog_id}/bookmark")
 async def add_blog_to_bookmark_route(
     blog_id: int,
@@ -100,12 +101,13 @@ async def add_blog_to_bookmark_route(
         return await add_blog_to_bookmark(
             session=session, blog_id=blog_id, user_id=current_user.id
         )
-    
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Something went wrong while adding or removing blog from bookmark {str(e)}"
+            status_code=500,
+            detail=f"Something went wrong while adding or removing blog from bookmark {str(e)}",
         )
 
 

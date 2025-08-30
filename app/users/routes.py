@@ -9,9 +9,10 @@ from app.blogs.crud import get_user_blogs
 from app.blogs.schema import BlogResponse
 from app.core.database import AsyncSession, get_session
 from app.models.schema import CommonParams, PaginatedResponse
-from app.users.crud import (change_user_password, follow_user, get_user_bookmarks, get_user_info,
-                            list_followers, list_followings, list_users,
-                            unfollow_user, update_user_profile)
+from app.users.crud import (change_user_password, follow_user,
+                            get_user_bookmarks, get_user_info, list_followers,
+                            list_followings, list_users, unfollow_user,
+                            update_user_profile)
 from app.users.models import User
 from app.users.schema import (CurrentUserRead, UserChangePassword, UserRead,
                               UserResponse)
@@ -154,7 +155,6 @@ async def list_bookmarks_route(
             user_id=current_user.id,
         )
 
-
         data = [
             BlogResponse.model_validate(
                 blog.model_copy(update={"tags": [tag.title for tag in blog.tags]})
@@ -169,7 +169,10 @@ async def list_bookmarks_route(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Something went wrong while listing bookmark {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Something went wrong while listing bookmark {str(e)}",
+        )
 
 
 ################################################

@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import  select
+from sqlmodel import select
 
 from app.blogs.models import Blog, Comment
 

@@ -1,15 +1,16 @@
 import asyncio
+
 from fastapi import HTTPException, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import func, select
 from sqlalchemy.orm import selectinload
+from sqlmodel import func, select
 
 from app.auth.hashing import hash_password, verify_password
 from app.auth.security import check_password_strength
 from app.blogs.models import Blog
 from app.notifications.models import Notification
 from app.notifications.service import NotificationType, create_notification
-from app.users.models import User, UserFollowLink, BookMark
+from app.users.models import BookMark, User, UserFollowLink
 from app.users.schema import CurrentUserRead
 from app.utils.remove_image import remove_image
 from app.utils.save_image import save_image
@@ -80,16 +81,18 @@ async def update_user_profile(
     await session.refresh(current_user)
 
 
-async def get_user_bookmarks(user_id:int, search: str | None, limit:int, offset:int, session: AsyncSession):
+async def get_user_bookmarks(
+    user_id: int, search: str | None, limit: int, offset: int, session: AsyncSession
+):
     user = await session.get(User, user_id)
-    
+
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    
+
     blogs_query = (
         select(Blog)
-        .options(selectinload(Blog.tags)) # type: ignore
-        .join(BookMark, Blog.id == BookMark.blog_id) # type: ignore
+        .options(selectinload(Blog.tags))  # type: ignore
+        .join(BookMark, Blog.id == BookMark.blog_id)  # type: ignore
         .where(BookMark.user_id == user_id)
     )
     condition = None
@@ -102,21 +105,20 @@ async def get_user_bookmarks(user_id:int, search: str | None, limit:int, offset:
     total_query = (
         select(func.count())
         .select_from(Blog)
-        .join(BookMark, Blog.id == BookMark.blog_id) # type: ignore
+        .join(BookMark, Blog.id == BookMark.blog_id)  # type: ignore
         .where(BookMark.user_id == user_id)
     )
-    
+
     if condition is not None:
         total_query = total_query.where(condition)
 
     blogs_result, total_result = await asyncio.gather(
-        session.execute(blogs_query),
-        session.execute(total_query)
+        session.execute(blogs_query), session.execute(total_query)
     )
 
     blogs = blogs_result.scalars().all()
     total = total_result.scalar_one()
-   
+
     return blogs, total
 
 

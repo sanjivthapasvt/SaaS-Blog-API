@@ -3,7 +3,8 @@ from typing import TYPE_CHECKING, Optional
 
 from nanoid import generate
 from slugify import slugify
-from sqlmodel import TIMESTAMP, Column, Field, Relationship, SQLModel, Text, func
+from sqlmodel import (TIMESTAMP, Column, Field, Relationship, SQLModel, Text,
+                      func)
 
 from app.models.blog_like_link import BlogLikeLink
 
@@ -25,8 +26,9 @@ class Blog(SQLModel, table=True):
     thumbnail_url: str | None = Field(default=None)
     content: str = Field(sa_column=Column(Text))
     author: int = Field(foreign_key="user.id")
-    created_at: datetime = Field(default=None,
-        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    created_at: datetime = Field(
+        default=None,
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()),
     )
     is_public: bool = Field(default=True)
     likes: list["User"] = Relationship(
@@ -50,8 +52,9 @@ class Comment(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     content: str = Field(sa_column=Column(Text))
     commented_by: int | None = Field(default=None, foreign_key="user.id")
-    created_at: datetime = Field(default=None,
-        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
+    created_at: datetime = Field(
+        default=None,
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()),
     )
     last_modified: datetime | None = Field(default=None)
     blog_id: int = Field(foreign_key="blog.id", index=True)

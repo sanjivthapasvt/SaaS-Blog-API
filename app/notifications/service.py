@@ -1,4 +1,5 @@
 from typing import List, Optional
+
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import insert
@@ -69,13 +70,11 @@ async def create_notifications(
         ]
 
         inserted_notifications: List[Notification] = []
-        
+
         if notifications_data:
             # Bulk insert
             result = await session.execute(
-                insert(Notification)
-                .values(notifications_data)
-                .returning(Notification)
+                insert(Notification).values(notifications_data).returning(Notification)
             )
             await session.commit()
             inserted_notifications = list(result.scalars().all())
@@ -88,13 +87,16 @@ async def create_notifications(
                             notification, request.app.state.redis_manager
                         )
                     except Exception as e:
-                        logger.error(f"Failed to publish notification {notification.id}: {e}")
+                        logger.error(
+                            f"Failed to publish notification {notification.id}: {e}"
+                        )
             else:
-                logger.warning("Redis manager not available, notifications not published to real-time")
+                logger.warning(
+                    "Redis manager not available, notifications not published to real-time"
+                )
 
         return inserted_notifications
 
     except Exception as e:
         logger.error(f"Something went wrong while creating notifications: {e}")
         return []
-
