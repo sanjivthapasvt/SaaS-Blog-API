@@ -32,16 +32,16 @@ This project is designed for **scalability**, **security**, and **extensibility*
 - 👥 User system (follow/unfollow, profiles, password change)  
 - 🔎 Pagination & search everywhere  
 - 🖼️ File uploads (thumbnails, profile pictures)  
+- 🏷️ Tags & categorization  
+- 🔔 Push notifications for likes/follows/new blogs from following
+- 📌 Bookmarks (save posts for later)
 
 ### 🛠 Planned  
-- 🏷️ Tags & categorization improvements  
 - ⚡ Caching  
 - 📧 Email verification & password reset
-- 🔔 Push notifications for likes/comments/follows
 - 📊 Popular blogs (trending posts based on likes/views)
 - ⚡ Celery – Asynchronous background task
 - 🔍 Content suggestions & related blogs (recommendation engine)
-- 📌 Bookmarks (save posts for later)
 - 🗂️ Heavy background tasks (image processing, analytics, etc.)
 - ⏰ Scheduled periodic tasks (cleanup expired tokens, cache updates)
 
