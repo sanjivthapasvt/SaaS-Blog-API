@@ -13,7 +13,7 @@ def setup_routes(app: FastAPI) -> None:
     """Configure all API routes"""
 
     # Health check endpoint
-    @app.get("/ping")
+    @app.get("/ping", tags=["Ping"])
     async def ping_server():
         return {"ping": "pong"}
 
