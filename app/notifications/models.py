@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
-from sqlmodel import Column, Field, SQLModel, Text
+from sqlmodel import TIMESTAMP, Column, Field, SQLModel, Text, func
 
 
 class NotificationType(str, Enum):
@@ -23,6 +23,6 @@ class Notification(SQLModel, table=True):
     )
     message: str = Field(sa_column=Column(Text))
     created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc), index=True
+        sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now())
     )
     is_read: bool = False
