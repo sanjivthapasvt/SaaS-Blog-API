@@ -12,7 +12,7 @@ from app.blogs.models import Blog, BlogTagLink, Comment, Tag
 from app.models.blog_like_link import BlogLikeLink
 from app.notifications.models import Notification, NotificationType
 from app.notifications.service import create_notification, create_notifications
-from app.users.models import User, UserFollowLink
+from app.users.models import BookMark, User, UserFollowLink
 from app.users.schema import CurrentUserRead
 from app.utils.remove_image import remove_image
 from app.utils.save_image import save_image
@@ -322,6 +322,31 @@ async def get_liked_blogs(
 
     return blogs, total
 
+
+async def add_blog_to_bookmark(
+    session: AsyncSession,
+    user_id: int,
+    blog_id:int,
+):
+    user, blog = await asyncio.gather(
+        session.get(User, user_id), session.get(Blog, blog_id)
+    ) 
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog not found")
+
+    bookmark = await session.execute(select(BookMark).where((BookMark.blog_id == blog_id) & (BookMark.user_id == user_id)))
+    existing_bookmarks = bookmark.scalars().first()
+    if existing_bookmarks:
+        await session.delete(existing_bookmarks)
+        await session.commit()
+        return {"detail": "Successfully removed from bookmark"}
+    
+    new_bookmark = BookMark(user_id=user_id, blog_id=blog_id)
+    session.add(new_bookmark)
+    await session.commit()
+    return {"detail": "Successfully added to bookmark"}
 
 async def get_user_blogs(
     session: AsyncSession,
