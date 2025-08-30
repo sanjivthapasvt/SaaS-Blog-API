@@ -62,4 +62,9 @@ class User(SQLModel, table=True):
     )
 
 
+class BookMark(SQLModel, table=True):
+    user_id:int = Field(foreign_key="user.id", primary_key=True)
+    blog_id: int = Field(foreign_key="blog.id", primary_key=True)
+
+
 User.model_rebuild()
