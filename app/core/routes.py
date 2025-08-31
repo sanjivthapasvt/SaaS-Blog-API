@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.auth.google_auth import router as google_auth_router
+from app.auth.google_routes import router as google_auth_router
 from app.auth.routes import router as auth_router
 from app.blogs.comment_routes import router as comment_router
 from app.blogs.routes import router as blog_router

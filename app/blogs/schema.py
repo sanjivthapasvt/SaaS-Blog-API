@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, StringConstraints
 class BlogResponse(BaseModel):
     id: int
     title: str
-    slug:str
+    slug: str
     thumbnail_url: str | None
     author: int
     tags: list[str]
