@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 class BlogResponse(BaseModel):
     id: int
     title: str
+    slug: str
     thumbnail_url: str | None
     author: int
     tags: list[str]
@@ -15,7 +16,6 @@ class BlogResponse(BaseModel):
 
 
 class BlogContentResponse(BaseModel):
-    id: int
     title: str
     content: str
     author: int

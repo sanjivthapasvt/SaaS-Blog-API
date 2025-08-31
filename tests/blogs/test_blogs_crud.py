@@ -257,7 +257,6 @@ class TestBlogCRUD:
         assert resp.status_code == 200
 
         validated_blog = validate_response(resp.json(), BlogContentResponse)
-        assert validated_blog.id == blog_id
         assert validated_blog.title == "Specific Created Blog"
         assert validated_blog.content == "This is the full content of the blog"
         assert isinstance(validated_blog.author, int)
