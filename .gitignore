@@ -4,3 +4,4 @@ __pycache__
 database.db*
 media/
 *.db
+.pytest_cache
