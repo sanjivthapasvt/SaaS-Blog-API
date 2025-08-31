@@ -36,9 +36,11 @@ class Blog(SQLModel, table=True):
     )
     comments: list["Comment"] = Relationship(back_populates="blog")
     tags: list["Tag"] = Relationship(back_populates="blogs", link_model=BlogTagLink)
-
-    def generate_slug(self):
-        if not self.slug:
+   
+   
+    def __init__(self, **data):
+        super().__init__(**data)
+        if not self.slug and self.title:
             self.slug = slugify(f"{self.title}-{generate(size=10)}")
 
 
