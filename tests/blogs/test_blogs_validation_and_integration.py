@@ -148,7 +148,7 @@ class TestBlogIntegration:
         assert like_resp.status_code == 200
 
         # 5. Verify in liked blogs
-        liked_resp = await client.get("/api/blogs/liked", headers=headers)
+        liked_resp = await client.get("/api/users/me/blogs/liked", headers=headers)
         assert liked_resp.status_code == 200
         validated_liked = validate_response(
             liked_resp.json(), PaginatedResponse[BlogResponse]

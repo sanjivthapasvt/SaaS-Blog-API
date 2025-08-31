@@ -38,7 +38,7 @@ class TestBlogLikes:
         assert "liked" in like_resp.json()["detail"]
 
         # Get liked blogs and validate
-        liked_resp = await client.get("/api/blogs/liked", headers=headers)
+        liked_resp = await client.get("/api/users/me/blogs/liked", headers=headers)
         assert liked_resp.status_code == 200
 
         validated_liked = validate_response(
@@ -80,7 +80,7 @@ class TestBlogLikes:
         assert "added" in like_resp.json()["detail"].lower()
 
         # Verify blog appears in liked blogs
-        liked_resp = await client.get("/api/blogs/liked", headers=headers)
+        liked_resp = await client.get("/api/users/me/blogs/liked", headers=headers)
         assert liked_resp.status_code == 200
         validated_liked = validate_response(
             liked_resp.json(), PaginatedResponse[BlogResponse]
@@ -94,7 +94,7 @@ class TestBlogLikes:
         assert "removed" in unlike_resp.json()["detail"].lower()
 
         # Verify blog no longer in liked blogs
-        liked_resp2 = await client.get("/api/blogs/liked", headers=headers)
+        liked_resp2 = await client.get("/api/users/me/blogs/liked", headers=headers)
         assert liked_resp2.status_code == 200
         validated_liked2 = validate_response(
             liked_resp2.json(), PaginatedResponse[BlogResponse]
@@ -120,7 +120,7 @@ class TestBlogLikes:
         """Test getting liked blogs when user hasn't liked any"""
         headers = await _create_user(client, "NoLikesUser")
 
-        resp = await client.get("/api/blogs/liked", headers=headers)
+        resp = await client.get("/api/users/me/blogs/liked", headers=headers)
         assert resp.status_code == 200
 
         validated_data = validate_response(resp.json(), PaginatedResponse[BlogResponse])
@@ -157,7 +157,7 @@ class TestBlogLikes:
             await client.post(f"/api/blogs/{blog_id}/like", headers=headers)
 
         # Test pagination with validation
-        resp = await client.get("/api/blogs/liked?limit=3", headers=headers)
+        resp = await client.get("/api/users/me/blogs/liked?limit=3", headers=headers)
         assert resp.status_code == 200
         validated_data = validate_response(resp.json(), PaginatedResponse[BlogResponse])
         assert validated_data.total == 5
