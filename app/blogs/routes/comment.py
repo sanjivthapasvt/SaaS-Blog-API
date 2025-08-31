@@ -4,13 +4,13 @@ from fastapi_limiter.depends import RateLimiter
 
 from app.auth.dependency import get_current_user
 from app.auth.schemas import UserRead
-from app.blogs.comment_crud import (create_comment, delete_comment,
+from app.blogs.crud.comments import (create_comment, delete_comment,
                                     read_comments, update_comment)
 from app.blogs.schema import CommentWrite
 from app.core.database import AsyncSession, get_session
 from app.utils.rate_limiter import user_identifier
 
-router = APIRouter()
+router = APIRouter(tags=["Comments"])
 
 
 @router.post(

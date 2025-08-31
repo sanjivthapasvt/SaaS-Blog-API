@@ -1,17 +1,16 @@
 import asyncio
 from typing import List
 
-from aiosqlite import IntegrityError
 from fastapi import HTTPException, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import and_, col, delete, exists, func, select
 
 from app.blogs.models import Blog, BlogTagLink, Comment, Tag
-from app.models.blog_like_link import BlogLikeLink
-from app.notifications.models import Notification, NotificationType
-from app.notifications.service import create_notification, create_notifications
-from app.users.models import BookMark, User, UserFollowLink
+
+from app.notifications.models import NotificationType
+from app.notifications.service import create_notifications
+from app.users.models import User, UserFollowLink
 from app.users.schema import CurrentUserRead
 from app.utils.remove_image import remove_image
 from app.utils.save_image import save_image
@@ -87,82 +86,6 @@ async def create_new_blog(
         await session.refresh(new_blog)
 
     return new_blog
-
-
-async def like_unlike_blog(
-    session: AsyncSession,
-    blog_id: int,
-    current_user: CurrentUserRead,
-    request: Request | None = None,
-):
-    """
-    Toggle like/unlike status for a blog by the current user.
-
-    Raises 404 if blog not found.
-
-    Returns dict with action result message.
-    """
-
-    result = await session.execute(
-        select(BlogLikeLink).where(
-            (BlogLikeLink.blog_id == blog_id)
-            & (BlogLikeLink.user_id == current_user.id)
-        )
-    )
-
-    existing_like = result.scalars().first()
-
-    if existing_like:
-        blog = await session.get(Blog, blog_id)
-
-        if not blog:
-            raise HTTPException(status_code=404, detail="Blog doesn't exist")
-
-        await session.delete(existing_like)
-        # Delete notification if not self-like
-        if current_user.id != blog.author:
-            await session.execute(
-                delete(Notification).where(
-                    and_(
-                        Notification.owner_id == blog.author,
-                        Notification.blog_id == blog.id,
-                        Notification.notification_type == NotificationType.LIKE,
-                        Notification.triggered_by_user_id == current_user.id,
-                    )
-                )
-            )
-        await session.commit()
-        return {"detail": "removed from liked blogs"}
-
-    try:
-        # get blog info for notification
-        blog = await session.get(Blog, blog_id)
-
-        if not blog:
-            raise HTTPException(status_code=404, detail="Blog doesn't exist")
-
-        # create like link
-        new_link = BlogLikeLink(blog_id=blog_id, user_id=current_user.id)
-        session.add(new_link)
-        await session.commit()
-
-        # create notification only if not self-like
-        if current_user.id != blog.author:
-            await create_notification(
-                session=session,
-                owner_id=blog.author,
-                triggered_by_user_id=current_user.id,
-                blog_id=blog.id,
-                notification_type=NotificationType.LIKE,
-                message=f"{current_user.full_name} liked your blog {blog.title}",
-                request=request,
-            )
-        return {"detail": "added to liked blogs"}
-
-    except IntegrityError:
-        # race condition: like was created by another request
-        await session.rollback()
-        return {"detail": "already liked"}
 
 
 async def get_all_blogs(
@@ -244,111 +167,6 @@ async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
     return blog
-
-
-async def get_liked_blogs(
-    session: AsyncSession,
-    search: str | None,
-    limit: int,
-    offset: int,
-    user_id: int,
-    tags: List[str] | None,
-):
-    """
-    Retrieve paginated blogs liked by a user, optionally filtered by a search term.
-
-    Returns a dict with total count, pagination info, and blog data.
-    """
-
-    base_query = (
-        select(Blog)
-        .join(BlogLikeLink, Blog.id == BlogLikeLink.blog_id)  # type: ignore
-        .where(BlogLikeLink.user_id == user_id)
-    )
-
-    conditions = []
-
-    if search:
-        search_term = f"%{search.lower()}%"
-        conditions.append(func.lower(Blog.title).like(search_term))
-
-    # Tag filtering
-    if tags:
-        # Create a subquery that checks if a blog has all required tags
-        tag_subquery = (
-            select(BlogTagLink.blog_id)
-            .join(Tag, BlogTagLink.tag_id == Tag.id)  # type: ignore
-            .where(and_(BlogTagLink.blog_id == Blog.id, col(Tag.title).in_(tags)))
-            .group_by(BlogTagLink.blog_id)  # type: ignore
-            .having(func.count(func.distinct(Tag.id)) == len(tags))
-        )
-
-        conditions.append(exists(tag_subquery))
-
-    if conditions:
-        filtered_query = base_query.where(and_(*conditions))
-    else:
-        filtered_query = base_query
-
-    # main query with pagination
-    blogs_query = (
-        filtered_query.where(Blog.is_public)
-        .options(selectinload(Blog.tags))  # type: ignore
-        .order_by(Blog.id)  # type: ignore
-        .limit(limit)
-        .offset(offset)
-    )
-
-    # create count query
-    count_query = (
-        select(func.count(Blog.id))  # type: ignore
-        .join(BlogLikeLink, Blog.id == BlogLikeLink.blog_id)  # type: ignore
-        .where(and_(BlogLikeLink.user_id == user_id, Blog.is_public))
-    )
-
-    # apply conditions to count query
-    if conditions:
-        count_query = count_query.where(and_(*conditions))
-
-    # Execute both queries concurrently
-    blogs_result, total_result = await asyncio.gather(
-        session.execute(blogs_query), session.execute(count_query)
-    )
-
-    blogs = blogs_result.scalars().all()
-    total = total_result.scalar_one()
-
-    return blogs, total
-
-
-async def add_blog_to_bookmark(
-    session: AsyncSession,
-    user_id: int,
-    blog_id: int,
-):
-    user, blog = await asyncio.gather(
-        session.get(User, user_id), session.get(Blog, blog_id)
-    )
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    if not blog:
-        raise HTTPException(status_code=404, detail="Blog not found")
-
-    bookmark = await session.execute(
-        select(BookMark).where(
-            (BookMark.blog_id == blog_id) & (BookMark.user_id == user_id)
-        )
-    )
-    existing_bookmarks = bookmark.scalars().first()
-    if existing_bookmarks:
-        await session.delete(existing_bookmarks)
-        await session.commit()
-        return {"detail": "Successfully removed from bookmark"}
-
-    new_bookmark = BookMark(user_id=user_id, blog_id=blog_id)
-    session.add(new_bookmark)
-    await session.commit()
-    return {"detail": "Successfully added to bookmark"}
 
 
 async def list_user_blogs(

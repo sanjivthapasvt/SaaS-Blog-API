@@ -7,9 +7,9 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependency import get_current_user
-from app.blogs.crud import (add_blog_to_bookmark, create_new_blog, delete_blog,
-                            get_all_blogs, get_blog_by_id, get_liked_blogs,
-                            like_unlike_blog, update_blog)
+from app.blogs.crud.blogs import (create_new_blog, delete_blog,
+                            get_all_blogs, get_blog_by_id,
+                             update_blog)
 from app.blogs.schema import BlogContentResponse, BlogResponse
 from app.core.database import get_session
 from app.models.schema import CommonParams, PaginatedResponse
@@ -18,7 +18,7 @@ from app.utils.common_params import get_common_params
 from app.utils.rate_limiter import user_identifier
 from app.utils.save_image import save_image
 
-router = APIRouter()
+router = APIRouter(tags=["Blogs - CRUD"])
 
 thumbnail_path: str = "blogs/thumbnail"
 
@@ -65,52 +65,6 @@ async def create_blog_route(
         raise (HTTPException(status_code=500, detail=f"Something went wrong {str(e)}"))
 
 
-@router.post(
-    "/blogs/{blog_id}/like",
-    dependencies=[
-        Depends(RateLimiter(times=20, minutes=1, identifier=user_identifier))
-    ],
-)
-async def like_unlike_blog_route(
-    blog_id: int,
-    request: Request,
-    current_user: CurrentUserRead = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-):
-    """Toggle like status for a blog post."""
-    try:
-        return await like_unlike_blog(
-            session=session, blog_id=blog_id, current_user=current_user, request=request
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Something went wrong while liking post {str(e)}"
-        )
-
-
-@router.post("/blogs/{blog_id}/bookmark")
-async def add_blog_to_bookmark_route(
-    blog_id: int,
-    current_user: CurrentUserRead = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-):
-    """Toggle bookmark for a blog post."""
-    try:
-        return await add_blog_to_bookmark(
-            session=session, blog_id=blog_id, user_id=current_user.id
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Something went wrong while adding or removing blog from bookmark {str(e)}",
-        )
-
-
 @router.get(
     "/blogs",
     response_model=PaginatedResponse[BlogResponse],
@@ -151,45 +105,6 @@ async def get_all_blogs_route(
         raise HTTPException(
             status_code=500, detail=f"Something went wrong while getting blogs {str(e)}"
         )
-
-
-@router.get(
-    "/blogs/liked",
-    response_model=PaginatedResponse[BlogResponse],
-    dependencies=[
-        Depends(RateLimiter(times=30, minutes=1, identifier=user_identifier))
-    ],
-)
-async def get_liked_blog_route(
-    params: CommonParams = Depends(get_common_params),
-    current_user: CurrentUserRead = Depends(get_current_user),
-    tags: List[str] | None = Query(None),
-    session: AsyncSession = Depends(get_session),
-):
-    """Retrieve blogs liked by the current user."""
-    try:
-        blogs_result, total_result = await get_liked_blogs(
-            session=session,
-            search=params.search,
-            limit=params.limit,
-            offset=params.offset,
-            user_id=current_user.id,
-            tags=tags,
-        )
-
-        data = [
-            BlogResponse.model_validate(
-                blog.model_copy(update={"tags": [tag.title for tag in blog.tags]})
-            )
-            for blog in blogs_result
-        ]
-
-        return PaginatedResponse[BlogResponse](
-            total=total_result, limit=params.limit, offset=params.offset, data=data
-        )
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 
 @router.get(
