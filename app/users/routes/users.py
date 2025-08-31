@@ -5,7 +5,7 @@ from fastapi.exceptions import HTTPException
 from fastapi_limiter.depends import RateLimiter
 
 from app.auth.dependency import get_current_user
-from app.blogs.crud import list_user_blogs
+from app.blogs.crud.blogs import list_user_blogs
 from app.blogs.schema import BlogResponse
 from app.core.database import AsyncSession, get_session
 from app.models.schema import CommonParams, PaginatedResponse
