@@ -351,7 +351,7 @@ async def add_blog_to_bookmark(
     return {"detail": "Successfully added to bookmark"}
 
 
-async def get_user_blogs(
+async def list_user_blogs(
     session: AsyncSession,
     search: str | None,
     limit: int,

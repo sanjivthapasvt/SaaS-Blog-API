@@ -14,8 +14,9 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 
+
 ##################################################
-#----------- Generate Google Login URL ----------#
+# ----------- Generate Google Login URL ----------#
 ##################################################
 def generate_google_login_url() -> str:
     scopes = ["openid", "email", "profile"]
@@ -33,7 +34,7 @@ def generate_google_login_url() -> str:
 
 
 ###############################################
-#----------- Handle Google Callback ----------#
+# ----------- Handle Google Callback ----------#
 ###############################################
 async def authenticate_with_google(code: str, session: AsyncSession):
     """
@@ -116,8 +117,9 @@ async def authenticate_with_google(code: str, session: AsyncSession):
             detail=f"Something went wrong while authenticating {str(e)}",
         )
 
+
 ############################################
-#----------- Check Existing User ----------#
+# ----------- Check Existing User ----------#
 ############################################
 async def check_user_exist(google_id: str, session: AsyncSession) -> User | None:
     user = await session.execute(select(User).where(User.google_id == google_id))

@@ -6,7 +6,7 @@ from app.blogs.comment_routes import router as comment_router
 from app.blogs.routes import router as blog_router
 from app.notifications.routes import router as notification_router
 from app.realtime.routes import router as realtime_router
-from app.users.routes import router as users_router
+from app.users.router import router as users_router
 
 
 def setup_routes(app: FastAPI) -> None:
@@ -24,4 +24,4 @@ def setup_routes(app: FastAPI) -> None:
     app.include_router(comment_router, prefix="/api", tags=["Comments"])
     app.include_router(notification_router, prefix="/api", tags=["Notification"])
     app.include_router(realtime_router, prefix="/api", tags=["Realtime"])
-    app.include_router(users_router, prefix="/api", tags=["Users"])
+    app.include_router(users_router, prefix="/api")
