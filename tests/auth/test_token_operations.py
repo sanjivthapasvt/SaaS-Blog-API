@@ -1,4 +1,4 @@
-import jwt
+from jose import jwt, JWTError
 import pytest
 from httpx import AsyncClient
 
@@ -21,7 +21,6 @@ class TestTokenOperations:
     async def test_access_token_structure(self, client: AsyncClient, token_user_data):
         """Test that access token has proper JWT structure"""
         # Register and get tokens
-
         resp = await client.post("/api/auth/register", json=token_user_data)
         assert resp.status_code == 200
         tokens = resp.json()
@@ -30,10 +29,10 @@ class TestTokenOperations:
 
         # Decode without verification to check structure
         try:
-            decoded = jwt.decode(access_token, options={"verify_signature": False})
+            decoded = jwt.get_unverified_claims(access_token)
             assert "sub" in decoded  # sub
             assert "exp" in decoded  # Expiration
-        except jwt.InvalidTokenError:
+        except JWTError:
             pytest.fail("Access token is not a valid JWT")
 
     @pytest.mark.asyncio
