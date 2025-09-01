@@ -21,7 +21,6 @@ dependencies = [
     "nanoid>=2.0.0",
     "passlib[bcrypt]>=1.7.4",
     "pydantic-settings>=2.10.1",
-    "pyjwt>=2.10.1",
     "pyproject-toml>=0.1.0",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.1.0",
