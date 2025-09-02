@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 
-from app.core.config import settings
+from app.core.services.config import settings
 
 
 def setup_docs_routes(app: FastAPI) -> None:

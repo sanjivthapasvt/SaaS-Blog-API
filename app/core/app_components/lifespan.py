@@ -7,8 +7,8 @@ from fastapi import FastAPI
 from fastapi_limiter import FastAPILimiter
 
 from app.auth.security import TokenBlacklist
-from app.core.database import init_db
-from app.core.redis import redis_manager
+from app.core.services.database import init_db
+from app.core.services.redis import redis_manager
 from app.realtime.manager import sse_manager
 
 load_dotenv()

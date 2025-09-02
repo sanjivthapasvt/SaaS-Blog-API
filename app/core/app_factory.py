@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 
-from app.core.config import settings
-from app.core.docs import setup_docs_routes
-from app.core.lifespan import lifespan
-from app.core.middleware import setup_middleware
-from app.core.routes import setup_routes
-from app.core.static_files import setup_static_files
+from app.core.app_components.docs import setup_docs_routes
+from app.core.app_components.lifespan import lifespan
+from app.core.app_components.middleware import setup_middleware
+from app.core.app_components.routes import setup_routes
+from app.core.app_components.static_files import setup_static_files
+from app.core.services.config import settings
 
 
 def create_app() -> FastAPI:

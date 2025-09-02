@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.core.config import settings
+from app.core.services.config import settings
 
 
 def setup_static_files(app: FastAPI) -> None:
