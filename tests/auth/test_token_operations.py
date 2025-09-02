@@ -1,6 +1,6 @@
-from jose import jwt, JWTError
 import pytest
 from httpx import AsyncClient
+from jose import JWTError, jwt
 
 
 class TestTokenOperations:

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
                                     create_async_engine)
 from sqlmodel import SQLModel
 
-from app.core.database import get_session
+from app.core.services.database import get_session
 from app.main import app
 
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./test.db"
