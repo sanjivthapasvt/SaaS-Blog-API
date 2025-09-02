@@ -1,8 +1,11 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 from nanoid import generate
 from slugify import slugify
+from sqlalchemy import event as sa_event
+from sqlalchemy.engine import Connection
+from sqlalchemy.orm import Mapper
 from sqlmodel import (TIMESTAMP, Column, Field, Relationship, SQLModel, Text,
                       func)
 
@@ -31,16 +34,50 @@ class Blog(SQLModel, table=True):
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()),
     )
     is_public: bool = Field(default=True)
+
     likes: list["User"] = Relationship(
         back_populates="liked_blogs", link_model=BlogLikeLink
     )
     comments: list["Comment"] = Relationship(back_populates="blog")
     tags: list["Tag"] = Relationship(back_populates="blogs", link_model=BlogTagLink)
 
-    def __init__(self, **data):
-        super().__init__(**data)
-        if not self.slug and self.title:
-            self.slug = slugify(f"{self.title}-{generate(size=10)}")
+    # Counters for like, comment, bookmarks, views
+    likes_count: int = Field(default=0)
+    comments_count: int = Field(default=0)
+    bookmarks_count: int = Field(default=0)
+    views_count: int = Field(default=0)
+
+    # Score for engagemnet, trending and popular
+    engagement_score: float = Field(default=0, index=True)
+    trending_score: float = Field(default=0, index=True)
+    popular_score: float = Field(default=0, index=True)
+
+    def update_engagement_score(self) -> None:
+        """Update engagement score"""
+        self.engagement_score = (
+            self.likes_count * 1.0
+            + self.comments_count * 3.0
+            + self.bookmarks_count * 2.0
+            + self.views_count * 0.1
+        )
+
+
+# Generate slug whenever new blog is inserted
+@sa_event.listens_for(Blog, "before_insert")
+def generate_slug(mapper: Mapper[Blog], connection: Connection, target: Blog):
+    if not target.slug and target.title:
+        target.slug = slugify(f"{target.title}-{generate(size=10)}")
+
+
+# Realtime update for engagement_score
+@sa_event.listens_for(Blog, "before_update")
+def update_engagement_score_realtime(
+    mapper: Mapper[Blog], connection: Connection, target: Blog
+):
+    """
+    Automatically update engagement score before saving blog changes.
+    """
+    target.update_engagement_score()
 
 
 class Tag(SQLModel, table=True):
