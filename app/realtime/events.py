@@ -1,6 +1,6 @@
 import json
 
-from app.core.redis import redis_manager
+from app.core.services.redis import redis_manager
 from app.notifications.models import Notification
 
 
