@@ -7,6 +7,7 @@ from sqlmodel import select
 from app.blogs.models import Blog
 from app.users.models import BookMark, User
 
+
 async def add_blog_to_bookmark(
     session: AsyncSession,
     user_id: int,

@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.blogs.routes import blogs, bookmarks, likes, comment
+
+from app.blogs.routes import blogs, bookmarks, comment, likes
 
 router = APIRouter()
 

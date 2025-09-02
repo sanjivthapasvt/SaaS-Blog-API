@@ -37,13 +37,17 @@ async def like_unlike_blog(
 
     existing_like = result.scalars().first()
 
-    if existing_like:
-        blog = await session.get(Blog, blog_id)
+    blog = await session.get(Blog, blog_id)
 
-        if not blog:
-            raise HTTPException(status_code=404, detail="Blog doesn't exist")
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog doesn't exist")
+
+    if existing_like:
+        blog.likes_count -= 1  # decrement like count
+        session.add(blog)
 
         await session.delete(existing_like)
+
         # Delete notification if not self-like
         if current_user.id != blog.author:
             await session.execute(
@@ -57,18 +61,17 @@ async def like_unlike_blog(
                 )
             )
         await session.commit()
+
         return {"detail": "removed from liked blogs"}
 
     try:
-        # get blog info for notification
-        blog = await session.get(Blog, blog_id)
-
-        if not blog:
-            raise HTTPException(status_code=404, detail="Blog doesn't exist")
-
         # create like link
         new_link = BlogLikeLink(blog_id=blog_id, user_id=current_user.id)
+
+        blog.likes_count += 1  # Update like counter
+
         session.add(new_link)
+        session.add(blog)
         await session.commit()
 
         # create notification only if not self-like
@@ -88,6 +91,7 @@ async def like_unlike_blog(
         # race condition: like was created by another request
         await session.rollback()
         return {"detail": "already liked"}
+
 
 async def get_liked_blogs(
     session: AsyncSession,

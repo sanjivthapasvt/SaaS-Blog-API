@@ -5,15 +5,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependency import get_current_user
 from app.blogs.crud.bookmarks import add_blog_to_bookmark
-from app.core.database import get_session
+from app.core.services.database import get_session
 from app.users.schema import CurrentUserRead
 from app.utils.rate_limiter import user_identifier
+
 router = APIRouter(tags=["Blogs - Bookmarks"])
 
 
-@router.post("/blogs/{blog_id}/bookmark", dependencies=[
+@router.post(
+    "/blogs/{blog_id}/bookmark",
+    dependencies=[
         Depends(RateLimiter(times=10, minutes=1, identifier=user_identifier))
-    ],)
+    ],
+)
 async def add_blog_to_bookmark_route(
     blog_id: int,
     current_user: CurrentUserRead = Depends(get_current_user),

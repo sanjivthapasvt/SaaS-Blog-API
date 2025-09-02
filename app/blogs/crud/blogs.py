@@ -7,7 +7,6 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import and_, col, delete, exists, func, select
 
 from app.blogs.models import Blog, BlogTagLink, Comment, Tag
-
 from app.notifications.models import NotificationType
 from app.notifications.service import create_notifications
 from app.users.models import User, UserFollowLink

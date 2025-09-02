@@ -7,11 +7,10 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependency import get_current_user
-from app.blogs.crud.blogs import (create_new_blog, delete_blog,
-                            get_all_blogs, get_blog_by_id,
-                             update_blog)
+from app.blogs.crud.blogs import (create_new_blog, delete_blog, get_all_blogs,
+                                  get_blog_by_id, update_blog)
 from app.blogs.schema import BlogContentResponse, BlogResponse
-from app.core.database import get_session
+from app.core.services.database import get_session
 from app.models.schema import CommonParams, PaginatedResponse
 from app.users.schema import CurrentUserRead
 from app.utils.common_params import get_common_params

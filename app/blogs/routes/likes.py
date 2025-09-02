@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependency import get_current_user
 from app.blogs.crud.likes import like_unlike_blog
-from app.core.database import get_session
+from app.core.services.database import get_session
 from app.users.schema import CurrentUserRead
 from app.utils.rate_limiter import user_identifier
 
@@ -35,4 +35,3 @@ async def like_unlike_blog_route(
         raise HTTPException(
             status_code=500, detail=f"Something went wrong while liking post {str(e)}"
         )
-
