@@ -80,7 +80,7 @@ async def _update_popular_score():
 
 
 @celery_app.task
-def update_trending_score():
+def update_trending_scores():
     """Celery task to update trending score"""
     asyncio.run(_update_trending_score())
 
