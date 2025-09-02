@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependency import get_current_user
 from app.auth.schemas import UserRead
-from app.core.database import get_session
+from app.core.services.database import get_session
 from app.models.schema import CommonParams, PaginatedResponse
 from app.notifications.crud import get_notifications, mark_notification_as_read
 from app.notifications.schema import NotificationResponse
