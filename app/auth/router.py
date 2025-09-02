@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-from app.auth.routes import google, local
 
+from app.auth.routes import google, local
 
 router = APIRouter()
 

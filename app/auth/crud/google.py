@@ -1,9 +1,9 @@
 import os
 from urllib.parse import urlencode
 
-from fastapi.responses import RedirectResponse
 import httpx
 from fastapi import HTTPException
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -15,6 +15,7 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 FRONTEND_URL = os.getenv("FRONTEND_URL")
+
 
 ##################################################
 # ----------- Generate Google Login URL ----------#
@@ -58,7 +59,9 @@ async def authenticate_with_google(code: str, session: AsyncSession):
         token_data = token_resp.json()
         access_token = token_data.get("access_token")
         if not access_token:
-            raise HTTPException(status_code=400, detail="Failed to retrieve access token")
+            raise HTTPException(
+                status_code=400, detail="Failed to retrieve access token"
+            )
 
         # Get user info
         user_info_resp = await client.get(
@@ -83,7 +86,9 @@ async def authenticate_with_google(code: str, session: AsyncSession):
 
     if not user:
         # Check if a user exists with the same email
-        existing_user_result = await session.execute(select(User).where(User.email == email))
+        existing_user_result = await session.execute(
+            select(User).where(User.email == email)
+        )
         existing_user = existing_user_result.scalars().first()
 
         if existing_user and not existing_user.google_id:
@@ -114,10 +119,11 @@ async def authenticate_with_google(code: str, session: AsyncSession):
         "refresh_token": jwt_refresh_token,
         "token_type": "bearer",
     }
-        
+
     # Redirect user to frontend with tokens
     # redirect_url = f"{FRONTEND_URL}/auth/success?access={jwt_access_token}&refresh={jwt_refresh_token}"
     # return RedirectResponse(url=redirect_url)
+
 
 ############################################
 # ----------- Check Existing User ----------#

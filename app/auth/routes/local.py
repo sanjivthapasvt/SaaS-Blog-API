@@ -3,12 +3,12 @@ from fastapi.security import HTTPAuthorizationCredentials
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.crud.local import (authenticate_user, logout_user, refresh_tokens,
-                           register_user)
+from app.auth.crud.local import (authenticate_user, logout_user,
+                                 refresh_tokens, register_user)
 from app.auth.jwt_handler import bearer_scheme
 from app.auth.schemas import Token, UserCreate, UserLogin
 from app.auth.security import TokenBlacklist, get_token_blacklist
-from app.core.database import get_session
+from app.core.services.database import get_session
 
 router = APIRouter(tags=["Auth - Local"])
 

@@ -5,7 +5,7 @@ from sqlmodel import select
 
 from app.auth.jwt_handler import bearer_scheme, decode_token
 from app.auth.security import get_token_blacklist
-from app.core.database import get_session
+from app.core.services.database import get_session
 from app.users.models import User
 
 

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.crud.google import (authenticate_with_google,
                                   generate_google_login_url)
-from app.core.database import get_session
+from app.core.services.database import get_session
 
 router = APIRouter(tags=["Auth - Google"])
 
@@ -19,7 +19,9 @@ async def get_google_login_url():
         url = generate_google_login_url()
         return RedirectResponse(url=url, status_code=302)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error authenticating with Google: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error authenticating with Google: {str(e)}"
+        )
 
 
 @router.get(
@@ -34,4 +36,6 @@ async def auth_google(code: str, session: AsyncSession = Depends(get_session)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error authenticating with Google: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error authenticating with Google: {str(e)}"
+        )
