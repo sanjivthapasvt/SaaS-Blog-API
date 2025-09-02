@@ -7,7 +7,7 @@ from fastapi_limiter.depends import RateLimiter
 from app.auth.dependency import get_current_user
 from app.blogs.crud.blogs import list_user_blogs
 from app.blogs.schema import BlogResponse
-from app.core.database import AsyncSession, get_session
+from app.core.services.database import AsyncSession, get_session
 from app.models.schema import CommonParams, PaginatedResponse
 from app.users.crud.users import list_followers, list_followings, list_users
 from app.users.schema import UserRead, UserResponse

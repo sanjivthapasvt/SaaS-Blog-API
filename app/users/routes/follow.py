@@ -3,7 +3,7 @@ from fastapi.exceptions import HTTPException
 from fastapi_limiter.depends import RateLimiter
 
 from app.auth.dependency import get_current_user
-from app.core.database import AsyncSession, get_session
+from app.core.services.database import AsyncSession, get_session
 from app.users.crud.follow import follow_user, unfollow_user
 from app.users.models import User
 from app.users.schema import CurrentUserRead

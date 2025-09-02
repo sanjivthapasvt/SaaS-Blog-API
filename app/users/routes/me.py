@@ -7,7 +7,7 @@ from fastapi_limiter.depends import RateLimiter
 from app.auth.dependency import get_current_user
 from app.blogs.crud.blogs import list_user_blogs
 from app.blogs.schema import BlogResponse
-from app.core.database import AsyncSession, get_session
+from app.core.services.database import AsyncSession, get_session
 from app.models.schema import CommonParams, PaginatedResponse
 from app.users.crud.me import change_user_password, update_user_profile
 from app.users.crud.users import list_user_bookmarks, list_user_info
@@ -24,6 +24,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.exceptions import HTTPException
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.blogs.crud.likes import get_liked_blogs
 
 
@@ -136,8 +137,6 @@ async def list_current_user_blog_route(
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
 
-
-
 @router.get(
     "/users/me/blogs/bookmarks",
     dependencies=[
@@ -176,6 +175,7 @@ async def list_bookmarks_route(
             status_code=500,
             detail=f"Something went wrong while listing bookmark {str(e)}",
         )
+
 
 @router.get(
     "/users/me/blogs/liked",
