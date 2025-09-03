@@ -23,8 +23,10 @@ async def create_comment(
         raise HTTPException(status_code=404, detail="Blog not found")
 
     new_comment = Comment(blog_id=blog_id, content=content, commented_by=commented_by)
+    blog.comments_count += 1
 
     session.add(new_comment)
+    session.add(blog)
     await session.commit()
     await session.refresh(new_comment)
 
@@ -88,14 +90,16 @@ async def delete_comment(comment_id: int, session: AsyncSession, current_user: i
     """
     raw_comment = await session.execute(select(Comment).where(Comment.id == comment_id))
     comment = raw_comment.scalars().first()
-
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
     if comment.commented_by != current_user:
         raise HTTPException(
             status_code=403, detail="You are not the owner of the comment"
         )
-
+    blog = await session.get(Blog, comment.blog_id)
+    if blog:
+        blog.comments_count -= 1
+        session.add(blog)
     await session.delete(comment)
     await session.commit()
     return {"detail": "Successfully deleted comment"}

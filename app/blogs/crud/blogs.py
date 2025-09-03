@@ -165,6 +165,9 @@ async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
     blog = await session.get(Blog, blog_id)
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
+    blog.views_count += 1
+    session.add(blog)
+    await session.commit()
     return blog
 
 

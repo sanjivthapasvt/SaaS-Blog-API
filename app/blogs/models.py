@@ -12,7 +12,7 @@ from sqlmodel import (TIMESTAMP, Column, Field, Relationship, SQLModel, Text,
 from app.models.blog_like_link import BlogLikeLink
 
 if TYPE_CHECKING:
-    from users.models import User
+    from app.users.models import User
 
 
 class BlogTagLink(SQLModel, table=True):
@@ -49,8 +49,6 @@ class Blog(SQLModel, table=True):
 
     # Score for engagemnet, trending and popular
     engagement_score: float = Field(default=0, index=True)
-    trending_score: float = Field(default=0, index=True)
-    popular_score: float = Field(default=0, index=True)
 
     def update_engagement_score(self) -> None:
         """Update engagement score"""

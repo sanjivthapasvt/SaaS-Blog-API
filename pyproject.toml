@@ -12,7 +12,6 @@ dependencies = [
     "asyncpg>=0.30.0",
     "bcrypt==4.0.1",
     "black>=25.1.0",
-    "celery>=5.5.3",
     "fakeredis[lua]>=2.31.0",
     "fastapi-limiter>=0.1.6",
     "fastapi[standard]>=0.116.1",

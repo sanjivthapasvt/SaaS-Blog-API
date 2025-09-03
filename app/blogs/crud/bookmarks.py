@@ -26,9 +26,13 @@ async def add_blog_to_bookmark(
             (BookMark.blog_id == blog_id) & (BookMark.user_id == user_id)
         )
     )
+    blog.bookmarks_count += 1
+    session.add(blog)
     existing_bookmarks = bookmark.scalars().first()
     if existing_bookmarks:
         await session.delete(existing_bookmarks)
+        blog.bookmarks_count -= 1
+        session.add(blog)
         await session.commit()
         return {"detail": "Successfully removed from bookmark"}
 
