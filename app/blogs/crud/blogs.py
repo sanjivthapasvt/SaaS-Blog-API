@@ -277,6 +277,44 @@ async def list_user_blogs(
 
     return blogs, total
 
+async def get_recommended_blogs(
+    session: AsyncSession,
+    blog_id: int,
+    limit: int = 5,
+):
+    """
+    Recommend blogs based on shared tags with the current blog.
+    Excludes the current blog from results.
+    """
+    # Fetch the current blog with its tags
+    blog = await session.get(Blog, blog_id, options=[selectinload(Blog.tags)]) # type: ignore
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog not found")
+
+    if not blog.tags:
+        return []  # No tags, no recommendations
+
+    # Collect tag ids of the current blog
+    tag_ids = [tag.id for tag in blog.tags]
+
+    # Query blogs that share tags with current blog
+    query = (
+        select(Blog)
+        .join(BlogTagLink, Blog.id == BlogTagLink.blog_id) # type: ignore
+        .where(
+            BlogTagLink.tag_id.in_(tag_ids),  # has common tags # type: ignore
+            Blog.id != blog.id,              # exclude current blog
+            Blog.is_public == True
+        )
+        .options(selectinload(Blog.tags))  # eager load tags # type: ignore
+        .group_by(Blog.id)                 # avoid duplicates # type: ignore
+        .order_by(Blog.engagement_score.desc())  # prioritize popular # type: ignore
+        .limit(limit)
+    )
+
+    result = await session.execute(query)
+    recommended_blogs = result.scalars().all()
+    return recommended_blogs
 
 async def update_blog(
     blog_id: int,
