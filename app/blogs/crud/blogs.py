@@ -153,6 +153,43 @@ async def get_all_blogs(
 
     return blogs, total
 
+async def get_popular_blogs(
+    session: AsyncSession,
+    limit: int,
+    offset: int,
+):
+    """
+    Retrieve paginated list of popular blogs, optionally filtered by a search term in the title.
+
+    Returns a dict with total count, pagination info, and blog data.
+    """
+
+    base_query = select(Blog).where((Blog.is_public)  & (Blog.engagement_score > 0))
+
+
+    # main query with pagination
+    blogs_query = (
+        base_query.options(selectinload(Blog.tags))  # type: ignore
+        .order_by(Blog.engagement_score)  # type: ignore
+        .limit(limit)
+        .offset(offset)
+    )
+
+    # create count query
+    count_query = select(func.count(Blog.id)).where(  # type: ignore
+        (Blog.is_public) & (Blog.engagement_score > 0)
+    )
+
+    # Execute both queries concurrently
+    blogs_result, total_result = await asyncio.gather(
+        session.execute(blogs_query), session.execute(count_query)
+    )
+
+    blogs = blogs_result.scalars().all()
+    total = total_result.scalar_one()
+
+    return blogs, total
+
 
 async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
     """
@@ -165,7 +202,7 @@ async def get_blog_by_id(session: AsyncSession, blog_id: int) -> Blog | None:
     blog = await session.get(Blog, blog_id)
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
-    blog.views_count += 1
+    blog.views += 1
     session.add(blog)
     await session.commit()
     return blog

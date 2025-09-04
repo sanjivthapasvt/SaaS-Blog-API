@@ -45,7 +45,7 @@ class Blog(SQLModel, table=True):
     likes_count: int = Field(default=0)
     comments_count: int = Field(default=0)
     bookmarks_count: int = Field(default=0)
-    views_count: int = Field(default=0)
+    views: int = Field(default=0)
 
     # Score for engagemnet, trending and popular
     engagement_score: float = Field(default=0, index=True)
@@ -56,7 +56,7 @@ class Blog(SQLModel, table=True):
             self.likes_count * 1.0
             + self.comments_count * 3.0
             + self.bookmarks_count * 2.0
-            + self.views_count * 0.1
+            + self.views * 0.1
         )
 
 

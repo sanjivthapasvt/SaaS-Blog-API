@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependency import get_current_user
 from app.blogs.crud.blogs import (create_new_blog, delete_blog, get_all_blogs,
-                                  get_blog_by_id, update_blog)
+                                  get_blog_by_id, get_popular_blogs, update_blog)
 from app.blogs.schema import BlogContentResponse, BlogResponse
 from app.core.services.database import get_session
 from app.models.schema import CommonParams, PaginatedResponse
@@ -95,6 +95,45 @@ async def get_all_blogs_route(
 
         return PaginatedResponse[BlogResponse](
             total=total_result, limit=params.limit, offset=params.offset, data=data
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Something went wrong while getting blogs {str(e)}"
+        )
+
+@router.get(
+    "/blogs/popular",
+    response_model=PaginatedResponse[BlogResponse],
+    dependencies=[
+        Depends(RateLimiter(times=60, minutes=1, identifier=user_identifier))
+    ],
+)
+async def get_popular_blogs_route(
+    limit: int = Query(default=10),
+    offset: int = Query(default=0),
+    session: AsyncSession = Depends(get_session),
+):
+    """Retrieve all blogs with optional search and pagination."""
+    try:
+        blogs_result, total_result = await get_popular_blogs(
+            session=session,
+            limit=limit,
+            offset=offset
+        )
+        # validates response and set tags as list of strings
+        data = [
+            BlogResponse.model_validate(
+                blog.model_copy(update={"tags": [tag.title for tag in blog.tags]})
+            )
+            for blog in blogs_result
+        ]
+
+        return PaginatedResponse[BlogResponse](
+            total=total_result, limit=limit, offset=offset, data=data
         )
 
     except HTTPException:

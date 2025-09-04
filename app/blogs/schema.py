@@ -12,7 +12,11 @@ class BlogResponse(BaseModel):
     author: int
     tags: list[str]
     created_at: datetime
-
+    likes_count: int
+    comments_count: int
+    bookmarks_count: int 
+    views: int
+    
     model_config = ConfigDict(from_attributes=True)
 
 
