@@ -36,9 +36,9 @@ This project is designed for **scalability**, **security**, and **extensibility*
 - 🔔 Push notifications for likes/follows/new blogs from following
 - 📌 Bookmarks (save posts for later)
 - 📊 Popular blogs (trending posts based on likes/views)
+- 🔍 Content suggestions & related blogs (recommendation engine)
 ### 🛠 Planned  
 - 📧 Email verification & password reset
-- 🔍 Content suggestions & related blogs (recommendation engine)
 
 ---
 
