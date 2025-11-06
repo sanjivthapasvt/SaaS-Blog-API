@@ -73,9 +73,6 @@ async def _createsuperuser():
                 err_console.print("[bold red]Email already exist[/bold red]")
                 return
 
-            if len(password.encode('utf-8')) > 72:
-                err_console.print(f"[bold red]Password {password} is too long! Maximum 72 bytes allowed.[/bold red]")
-                return
             
             strong, reasons = check_password_strength(password)
             if not strong:
@@ -84,7 +81,7 @@ async def _createsuperuser():
                 if user_input.lower() != "y":
                     err_console.print(f"[bold red]{reasons}[/bold red]")
                     return
-            print(password)
+                
             hashed_password = hash_password(password)
             
             new_user = User(username=username,full_name=full_name, email=email, hashed_password=hashed_password, is_superuser=True)
