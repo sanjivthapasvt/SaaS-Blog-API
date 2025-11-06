@@ -75,3 +75,5 @@ class BookMark(SQLModel, table=True):
 
 
 User.model_rebuild()
+from app.blogs.models import Blog
+Blog.model_rebuild()
