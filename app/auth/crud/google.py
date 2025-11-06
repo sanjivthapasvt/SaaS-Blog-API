@@ -3,7 +3,6 @@ from urllib.parse import urlencode
 
 import httpx
 from fastapi import HTTPException
-from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
