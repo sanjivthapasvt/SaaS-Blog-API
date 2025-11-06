@@ -1,4 +1,3 @@
-from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
@@ -45,11 +44,11 @@ class User(SQLModel, table=True):
     
     is_superuser: bool = Field(default=False)
 
-    liked_blogs: Mapped[list["Blog"]] = Relationship(
+    liked_blogs: Mapped[List["Blog"]] = Relationship(
         back_populates="likes", link_model=BlogLikeLink
     )
 
-    followings: List["User"] = Relationship(
+    followings: Mapped[List["User"]] = Relationship(
         back_populates="followers",
         link_model=UserFollowLink,
         sa_relationship_kwargs={
@@ -59,7 +58,7 @@ class User(SQLModel, table=True):
         },
     )
 
-    followers: List["User"] = Relationship(
+    followers: Mapped[List["User"]] = Relationship(
         back_populates="followings",
         link_model=UserFollowLink,
         sa_relationship_kwargs={
