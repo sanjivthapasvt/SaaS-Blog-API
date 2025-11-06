@@ -1,9 +1,11 @@
+from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, List, Optional
 
 from sqlmodel import (TIMESTAMP, Column, Field, Relationship, SQLModel, Text,
                       func)
+from sqlalchemy.orm import Mapped
 
 from app.models.blog_like_link import BlogLikeLink
 
@@ -40,8 +42,10 @@ class User(SQLModel, table=True):
     )
     hashed_password: Optional[str] = None
     is_active: bool = Field(default=True)
+    
+    is_superuser: bool = Field(default=False)
 
-    liked_blogs: list["Blog"] = Relationship(
+    liked_blogs: Mapped[list["Blog"]] = Relationship(
         back_populates="likes", link_model=BlogLikeLink
     )
 
