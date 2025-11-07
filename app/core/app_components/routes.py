@@ -5,7 +5,7 @@ from app.blogs.router import router as blog_router
 from app.notifications.routes import router as notification_router
 from app.realtime.routes import router as realtime_router
 from app.users.router import router as users_router
-
+from app.admin.router import router as admin_router
 
 def setup_routes(app: FastAPI) -> None:
     """Configure all API routes"""
@@ -21,3 +21,4 @@ def setup_routes(app: FastAPI) -> None:
     app.include_router(notification_router, prefix="/api", tags=["Notification"])
     app.include_router(realtime_router, prefix="/api", tags=["Realtime"])
     app.include_router(users_router, prefix="/api")
+    app.include_router(admin_router, prefix="/admin")
