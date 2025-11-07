@@ -42,6 +42,7 @@ async def _createsuperuser():
     full_name: str = input("Enter full name: ")
     email: EmailStr  = input("Enter email: ")
     password = getpass.getpass("Enter password: ")
+    confirm_password = getpass.getpass("Enter confirm password: ")
     
     async for session in  get_session():
         try:
@@ -73,6 +74,9 @@ async def _createsuperuser():
                 err_console.print("[bold red]Email already exist[/bold red]")
                 return
 
+            if password != confirm_password:
+                err_console.print(f"[bold red]Password did not match! [/bold red]")
+                return
             
             strong, reasons = check_password_strength(password)
             if not strong:
