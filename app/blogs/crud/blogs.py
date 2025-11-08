@@ -153,6 +153,7 @@ async def get_all_blogs(
 
     return blogs, total
 
+
 async def get_popular_blogs(
     session: AsyncSession,
     limit: int,
@@ -164,8 +165,7 @@ async def get_popular_blogs(
     Returns a dict with total count, pagination info, and blog data.
     """
 
-    base_query = select(Blog).where((Blog.is_public)  & (Blog.engagement_score > 0))
-
+    base_query = select(Blog).where((Blog.is_public) & (Blog.engagement_score > 0))
 
     # main query with pagination
     blogs_query = (
@@ -277,6 +277,7 @@ async def list_user_blogs(
 
     return blogs, total
 
+
 async def get_recommended_blogs(
     session: AsyncSession,
     blog_id: int,
@@ -287,7 +288,7 @@ async def get_recommended_blogs(
     Excludes the current blog from results.
     """
     # Fetch the current blog with its tags
-    blog = await session.get(Blog, blog_id, options=[selectinload(Blog.tags)]) # type: ignore
+    blog = await session.get(Blog, blog_id, options=[selectinload(Blog.tags)])  # type: ignore
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
 
@@ -300,14 +301,14 @@ async def get_recommended_blogs(
     # Query blogs that share tags with current blog
     query = (
         select(Blog)
-        .join(BlogTagLink, Blog.id == BlogTagLink.blog_id) # type: ignore
+        .join(BlogTagLink, Blog.id == BlogTagLink.blog_id)  # type: ignore
         .where(
             BlogTagLink.tag_id.in_(tag_ids),  # has common tags # type: ignore
-            Blog.id != blog.id,              # exclude current blog
-            Blog.is_public == True
+            Blog.id != blog.id,  # exclude current blog
+            Blog.is_public == True,
         )
         .options(selectinload(Blog.tags))  # eager load tags # type: ignore
-        .group_by(Blog.id)                 # avoid duplicates # type: ignore
+        .group_by(Blog.id)  # avoid duplicates # type: ignore
         .order_by(Blog.engagement_score.desc())  # prioritize popular # type: ignore
         .limit(limit)
     )
@@ -315,6 +316,7 @@ async def get_recommended_blogs(
     result = await session.execute(query)
     recommended_blogs = result.scalars().all()
     return recommended_blogs
+
 
 async def update_blog(
     blog_id: int,

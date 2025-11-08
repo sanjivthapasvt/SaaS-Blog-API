@@ -19,7 +19,9 @@ class BlogTagLink(SQLModel, table=True):
     blog_id: Optional[int] = Field(
         default=None, foreign_key="blog.id", primary_key=True, ondelete="CASCADE"
     )
-    tag_id: Optional[int] = Field(default=None, foreign_key="tag.id", primary_key=True, ondelete="CASCADE")
+    tag_id: Optional[int] = Field(
+        default=None, foreign_key="tag.id", primary_key=True, ondelete="CASCADE"
+    )
 
 
 class Blog(SQLModel, table=True):

@@ -3,9 +3,9 @@ import sys
 from logging.config import fileConfig
 
 from alembic import context
+from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -17,7 +17,7 @@ if DATABASE_URL and DATABASE_URL.startswith("postgresql+asyncpg"):
     DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg", "postgresql+psycopg2")
     config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
-    
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 # this is the Alembic Config object, which provides
