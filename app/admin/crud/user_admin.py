@@ -1,7 +1,7 @@
 import re
 from app.admin.schema import UserCreate
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import select, delete
 from fastapi.exceptions import HTTPException
 from app.auth.hashing import hash_password
 from app.auth.security import check_password_strength
@@ -41,3 +41,17 @@ async def create_user(session: AsyncSession, user_data: UserCreate):
     await session.commit()
     await session.refresh(new_user)
     return new_user
+
+
+async def delete_user(session: AsyncSession, user_id: int) -> str | None:
+    # Check if user exists
+    user = await session.get(User, user_id)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User doesn't exist!")
+    
+    username = user.username
+    
+    await session.delete(user)
+    await session.commit()
+    return username
