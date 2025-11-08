@@ -17,9 +17,9 @@ if TYPE_CHECKING:
 
 class BlogTagLink(SQLModel, table=True):
     blog_id: Optional[int] = Field(
-        default=None, foreign_key="blog.id", primary_key=True
+        default=None, foreign_key="blog.id", primary_key=True, ondelete="CASCADE"
     )
-    tag_id: Optional[int] = Field(default=None, foreign_key="tag.id", primary_key=True)
+    tag_id: Optional[int] = Field(default=None, foreign_key="tag.id", primary_key=True, ondelete="CASCADE")
 
 
 class Blog(SQLModel, table=True):
@@ -28,7 +28,7 @@ class Blog(SQLModel, table=True):
     slug: str | None = Field(default=None, index=True, unique=True)
     thumbnail_url: str | None = Field(default=None)
     content: str = Field(sa_column=Column(Text))
-    author: int = Field(foreign_key="user.id")
+    author: int = Field(foreign_key="user.id", ondelete="CASCADE")
     created_at: datetime = Field(
         default=None,
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()),
@@ -36,10 +36,10 @@ class Blog(SQLModel, table=True):
     is_public: bool = Field(default=True)
 
     likes: list["User"] = Relationship(
-        back_populates="liked_blogs", link_model=BlogLikeLink
+        back_populates="liked_blogs", link_model=BlogLikeLink, cascade_delete=True
     )
-    comments: list["Comment"] = Relationship(back_populates="blog")
-    tags: list["Tag"] = Relationship(back_populates="blogs", link_model=BlogTagLink)
+    comments: list["Comment"] = Relationship(back_populates="blog", cascade_delete=True)
+    tags: list["Tag"] = Relationship(back_populates="blogs", link_model=BlogTagLink, cascade_delete=True)
 
     # Counters for like, comment, bookmarks, views
     likes_count: int = Field(default=0)
@@ -81,7 +81,7 @@ def update_engagement_score_realtime(
 class Tag(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: Optional[str] = Field(default=None, unique=True, index=True)
-    blogs: list[Blog] = Relationship(back_populates="tags", link_model=BlogTagLink)
+    blogs: list[Blog] = Relationship(back_populates="tags", link_model=BlogTagLink, cascade_delete=True)
 
 
 class Comment(SQLModel, table=True):
@@ -93,8 +93,8 @@ class Comment(SQLModel, table=True):
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()),
     )
     last_modified: datetime | None = Field(default=None)
-    blog_id: int = Field(foreign_key="blog.id", index=True)
-    blog: Optional[Blog] = Relationship(back_populates="comments")
+    blog_id: int = Field(foreign_key="blog.id", index=True, ondelete="CASCADE")
+    blog: Optional[Blog] = Relationship(back_populates="comments", cascade_delete=True)
 
 
 # to resolve string references for type checking

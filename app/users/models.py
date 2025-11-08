@@ -14,10 +14,10 @@ if TYPE_CHECKING:
 
 class UserFollowLink(SQLModel, table=True):
     follower_id: Optional[int] = Field(
-        default=None, foreign_key="user.id", primary_key=True
+        default=None, foreign_key="user.id", primary_key=True, ondelete="CASCADE"
     )
     following_id: Optional[int] = Field(
-        default=None, foreign_key="user.id", primary_key=True
+        default=None, foreign_key="user.id", primary_key=True, ondelete="CASCADE"
     )
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -45,7 +45,7 @@ class User(SQLModel, table=True):
     is_superuser: bool = Field(default=False)
 
     liked_blogs: Mapped[List["Blog"]] = Relationship(
-        back_populates="likes", link_model=BlogLikeLink
+        back_populates="likes", link_model=BlogLikeLink, cascade_delete=True
     )
 
     followings: Mapped[List["User"]] = Relationship(
@@ -56,6 +56,7 @@ class User(SQLModel, table=True):
             "secondaryjoin": "User.id==UserFollowLink.following_id",
             "overlaps": "followers",
         },
+        cascade_delete=True
     )
 
     followers: Mapped[List["User"]] = Relationship(
@@ -66,12 +67,13 @@ class User(SQLModel, table=True):
             "secondaryjoin": "User.id==UserFollowLink.follower_id",
             "overlaps": "followings",
         },
+        cascade_delete=True
     )
 
 
 class BookMark(SQLModel, table=True):
-    user_id: int = Field(foreign_key="user.id", primary_key=True)
-    blog_id: int = Field(foreign_key="blog.id", primary_key=True)
+    user_id: int = Field(foreign_key="user.id", primary_key=True, ondelete="CASCADE")
+    blog_id: int = Field(foreign_key="blog.id", primary_key=True, ondelete="CASCADE")
 
 
 User.model_rebuild()
