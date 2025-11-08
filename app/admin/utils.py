@@ -8,7 +8,6 @@ from app.auth.security import get_token_blacklist
 from app.core.services.database import get_session
 
 
-
 async def get_is_admin_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
@@ -60,5 +59,5 @@ async def get_is_admin_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User does not have permisssion for this action",
         )
-        
+
     return user
