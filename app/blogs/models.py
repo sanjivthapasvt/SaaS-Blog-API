@@ -36,10 +36,10 @@ class Blog(SQLModel, table=True):
     is_public: bool = Field(default=True)
 
     likes: list["User"] = Relationship(
-        back_populates="liked_blogs", link_model=BlogLikeLink, cascade_delete=True
+        back_populates="liked_blogs", link_model=BlogLikeLink
     )
-    comments: list["Comment"] = Relationship(back_populates="blog", cascade_delete=True)
-    tags: list["Tag"] = Relationship(back_populates="blogs", link_model=BlogTagLink, cascade_delete=True)
+    comments: list["Comment"] = Relationship(back_populates="blog")
+    tags: list["Tag"] = Relationship(back_populates="blogs", link_model=BlogTagLink)
 
     # Counters for like, comment, bookmarks, views
     likes_count: int = Field(default=0)
@@ -81,7 +81,7 @@ def update_engagement_score_realtime(
 class Tag(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: Optional[str] = Field(default=None, unique=True, index=True)
-    blogs: list[Blog] = Relationship(back_populates="tags", link_model=BlogTagLink, cascade_delete=True)
+    blogs: list[Blog] = Relationship(back_populates="tags", link_model=BlogTagLink)
 
 
 class Comment(SQLModel, table=True):
@@ -94,7 +94,7 @@ class Comment(SQLModel, table=True):
     )
     last_modified: datetime | None = Field(default=None)
     blog_id: int = Field(foreign_key="blog.id", index=True, ondelete="CASCADE")
-    blog: Optional[Blog] = Relationship(back_populates="comments", cascade_delete=True)
+    blog: Optional[Blog] = Relationship(back_populates="comments")
 
 
 # to resolve string references for type checking

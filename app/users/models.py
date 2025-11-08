@@ -45,7 +45,7 @@ class User(SQLModel, table=True):
     is_superuser: bool = Field(default=False)
 
     liked_blogs: Mapped[List["Blog"]] = Relationship(
-        back_populates="likes", link_model=BlogLikeLink, cascade_delete=True
+        back_populates="likes", link_model=BlogLikeLink,
     )
 
     followings: Mapped[List["User"]] = Relationship(
@@ -56,7 +56,6 @@ class User(SQLModel, table=True):
             "secondaryjoin": "User.id==UserFollowLink.following_id",
             "overlaps": "followers",
         },
-        cascade_delete=True
     )
 
     followers: Mapped[List["User"]] = Relationship(
@@ -67,7 +66,6 @@ class User(SQLModel, table=True):
             "secondaryjoin": "User.id==UserFollowLink.follower_id",
             "overlaps": "followings",
         },
-        cascade_delete=True
     )
 
 
