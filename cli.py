@@ -2,6 +2,7 @@ import asyncio
 import getpass
 import re
 import typer
+import subprocess
 
 from sqlmodel import select
 from rich import print
@@ -31,6 +32,11 @@ def init_db():
     asyncio.run(init_database())
     print("[green]Database initialized.[/green]")
 
+@app.command()
+def runserver(app: str | None = "app.main" ,port: int | None = 8000, env_file: str | None = None):
+    if env_file:
+        subprocess.run(["uvicorn", f"{app}:app", "--host" ,"0.0.0.0", "--port", f"{port}", "--env-file", f"{env_file}"])
+    subprocess.run(["uvicorn", f"{app}:app", "--host" ,"0.0.0.0", "--port", f"{port}"])
 
 @app.command()
 def createsuperuser():
