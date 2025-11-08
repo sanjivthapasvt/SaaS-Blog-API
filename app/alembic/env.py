@@ -8,9 +8,16 @@ from sqlmodel import SQLModel
 from dotenv import load_dotenv
 
 load_dotenv()
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+config = context.config
 
+if DATABASE_URL and DATABASE_URL.startswith("postgresql+asyncpg"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg", "postgresql+psycopg2")
+    config.set_main_option("sqlalchemy.url", DATABASE_URL)
+
+    
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 # this is the Alembic Config object, which provides
