@@ -43,6 +43,7 @@ class User(SQLModel, table=True):
     is_active: bool = Field(default=True)
 
     is_superuser: bool = Field(default=False)
+    is_verified: bool = Field(default=False)
 
     liked_blogs: Mapped[List["Blog"]] = Relationship(
         back_populates="likes",
