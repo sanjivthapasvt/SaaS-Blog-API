@@ -57,7 +57,7 @@ class TestListUserEndpoints:
     async def test_list_users_unauthorized(self, client: AsyncClient):
         """Test listing users without authentication"""
         resp = await client.get("/api/users")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_list_user_followers_success(self, client: AsyncClient):
@@ -101,7 +101,7 @@ class TestListUserEndpoints:
     async def test_list_user_followers_unauthorized(self, client: AsyncClient):
         """Test listing user followers without authentication"""
         resp = await client.get("/api/users/1/followers")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_list_user_following_success(self, client: AsyncClient):
@@ -134,7 +134,7 @@ class TestListUserEndpoints:
     async def test_list_user_following_unauthorized(self, client: AsyncClient):
         """Test listing user following without authentication"""
         resp = await client.get("/api/users/1/following")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_list_user_blogs_success(self, client: AsyncClient):

@@ -38,7 +38,7 @@ class TestUserMeEndpoints:
     async def test_get_current_user_info_unauthorized(self, client: AsyncClient):
         """Test getting current user info without authentication"""
         resp = await client.get("/api/users/me")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_get_current_user_info_invalid_token(self, client: AsyncClient):
@@ -100,7 +100,7 @@ class TestUserMeEndpoints:
     async def test_update_user_profile_unauthorized(self, client: AsyncClient):
         """Test updating profile without authentication"""
         resp = await client.patch("/api/users/me", data={"full_name": "Should Fail"})
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_change_password_success(self, client: AsyncClient):
@@ -175,7 +175,7 @@ class TestUserMeEndpoints:
                 "again_new_password": "NewSecret123@",
             },
         )
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_get_current_user_blogs_empty(self, client: AsyncClient):
@@ -211,4 +211,4 @@ class TestUserMeEndpoints:
     async def test_get_current_user_blogs_unauthorized(self, client: AsyncClient):
         """Test getting current user's blogs without authentication"""
         resp = await client.get("/api/users/me/blogs")
-        assert resp.status_code == 403
+        assert resp.status_code == 401

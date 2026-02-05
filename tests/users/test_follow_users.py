@@ -47,7 +47,7 @@ class TestUserFollowEndpoints:
     async def test_follow_user_unauthorized(self, client: AsyncClient):
         """Test following user without authentication"""
         resp = await client.post("/api/users/1/follow")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_unfollow_user_success(self, client: AsyncClient):
@@ -95,4 +95,4 @@ class TestUserFollowEndpoints:
     async def test_unfollow_user_unauthorized(self, client: AsyncClient):
         """Test unfollowing user without authentication"""
         resp = await client.delete("/api/users/1/follow")
-        assert resp.status_code == 403
+        assert resp.status_code == 401

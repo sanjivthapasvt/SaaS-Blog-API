@@ -200,7 +200,7 @@ class TestBlogCRUD:
             },
         )
 
-        assert resp.status_code == 403
+        assert resp.status_code == 401
         assert "not authenticated" in resp.json()["detail"].lower()
 
     @pytest.mark.asyncio

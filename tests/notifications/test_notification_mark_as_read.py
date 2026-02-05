@@ -83,4 +83,4 @@ class TestNotificationMarkAsRead:
     async def test_mark_as_read_unauthorized(self, client: AsyncClient):
         """Test marking notification as read without authentication"""
         mark_read_resp = await client.post("/api/notifications/1/mark_as_read")
-        assert mark_read_resp.status_code == 403
+        assert mark_read_resp.status_code == 401

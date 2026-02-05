@@ -70,7 +70,7 @@ class TestCommentCRUD:
             f"/api/blogs/{blog_id}/comments",
             json={"content": "Unauthorized comment"},
         )
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_create_comment_nonexistent_blog(self, client: AsyncClient):
@@ -203,7 +203,7 @@ class TestCommentCRUD:
             f"/api/comments/{comment_id}",
             json={"content": "Unauthorized update"},
         )
-        assert update_resp.status_code == 403
+        assert update_resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_update_comment_by_different_user(self, client: AsyncClient):
@@ -329,7 +329,7 @@ class TestCommentCRUD:
 
         # Try to delete without auth
         delete_resp = await client.delete(f"/api/comments/{comment_id}")
-        assert delete_resp.status_code == 403
+        assert delete_resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_delete_comment_by_different_user(self, client: AsyncClient):

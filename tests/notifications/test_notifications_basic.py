@@ -27,7 +27,7 @@ class TestNotificationBasics:
     async def test_get_notifications_unauthorized(self, client: AsyncClient):
         """Test getting notifications without authentication"""
         resp = await client.get("/api/notifications")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_get_notifications_pagination(self, client: AsyncClient):

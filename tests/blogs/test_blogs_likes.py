@@ -113,7 +113,7 @@ class TestBlogLikes:
     async def test_like_unauthorized(self, client: AsyncClient):
         """Test liking without authentication"""
         like_resp = await client.post("/api/blogs/1/like")
-        assert like_resp.status_code == 403
+        assert like_resp.status_code == 401
 
     @pytest.mark.asyncio
     async def test_get_liked_blogs_empty(self, client: AsyncClient):

@@ -100,7 +100,7 @@ class TestBlogValidation:
         resp = await client.post(
             "/api/blogs", data={"title": "Test", "content": "Test"}
         )
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
 
 class TestBlogIntegration:
