@@ -34,6 +34,18 @@ class Settings(BaseSettings):
     # Environment
     environment: str = "development"
     debug: bool = True
+    log_level: str = "INFO"
+
+    # Email Settings
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    smtp_from_name: str = "SaaS Blog"
+
+    # Frontend URL (for email links)
+    frontend_url: str = "http://localhost:3000"
 
     model_config = {"env_file": ".env", "case_sensitive": False, "extra": "ignore"}
 
