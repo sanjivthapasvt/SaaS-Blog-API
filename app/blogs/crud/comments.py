@@ -2,16 +2,28 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from app.blogs.models import Blog, Comment
 
 
 async def create_comment(
-    session: AsyncSession, blog_id: int, content: str, commented_by: int
+    session: AsyncSession,
+    blog_id: int,
+    content: str,
+    commented_by: int,
+    parent_id: int | None = None,
 ) -> Comment:
     """
     Create a comment on a blog post.
+
+    Args:
+        session: Database session
+        blog_id: ID of the blog to comment on
+        content: Comment content
+        commented_by: ID of the user creating the comment
+        parent_id: Optional ID of parent comment for replies
 
     Returns the created Comment instance.
     """
@@ -22,7 +34,25 @@ async def create_comment(
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
 
-    new_comment = Comment(blog_id=blog_id, content=content, commented_by=commented_by)
+    # Validate parent comment if provided
+    if parent_id is not None:
+        parent_result = await session.execute(
+            select(Comment).where(Comment.id == parent_id)
+        )
+        parent_comment = parent_result.scalars().first()
+        if not parent_comment:
+            raise HTTPException(status_code=404, detail="Parent comment not found")
+        if parent_comment.blog_id != blog_id:
+            raise HTTPException(
+                status_code=400, detail="Parent comment belongs to a different blog"
+            )
+
+    new_comment = Comment(
+        blog_id=blog_id,
+        content=content,
+        commented_by=commented_by,
+        parent_id=parent_id,
+    )
     blog.comments_count += 1
 
     session.add(new_comment)
@@ -35,17 +65,46 @@ async def create_comment(
 
 async def read_comments(blog_id: int, session: AsyncSession):
     """
-    Retrieve all comments for a given blog.
+    Retrieve all top-level comments for a given blog.
+    Replies are loaded automatically via the relationship.
 
     Raises 404 if blog not found.
 
-    Returns list of Comment instances.
+    Returns list of top-level Comment instances with nested replies.
     """
     if not await session.get(Blog, blog_id):
         raise HTTPException(status_code=404, detail="Blog not found")
 
-    comments = await session.execute(select(Comment).where(Comment.blog_id == blog_id))
+    # Get only top-level comments (parent_id is None)
+    comments = await session.execute(
+        select(Comment)
+        .where(Comment.blog_id == blog_id, Comment.parent_id == None)
+        .options(selectinload(Comment.replies).selectinload(Comment.replies))
+        .order_by(Comment.created_at.desc())
+    )
     return comments.scalars().all()
+
+
+async def get_comment_replies(comment_id: int, session: AsyncSession):
+    """
+    Get all replies to a specific comment.
+
+    Args:
+        comment_id: ID of the parent comment
+        session: Database session
+
+    Returns list of reply Comment instances.
+    """
+    parent_comment = await session.get(Comment, comment_id)
+    if not parent_comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    replies = await session.execute(
+        select(Comment)
+        .where(Comment.parent_id == comment_id)
+        .order_by(Comment.created_at.asc())
+    )
+    return replies.scalars().all()
 
 
 async def update_comment(

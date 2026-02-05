@@ -23,6 +23,7 @@ async def create_new_blog(
     content: str,
     current_user: CurrentUserRead,
     tags: str | None,
+    is_draft: bool = False,
 ) -> Blog:
     """
     Create a new blog post with optional tags.
@@ -42,30 +43,34 @@ async def create_new_blog(
         thumbnail_url=thumbnail_url,
         content=content,
         author=current_user.id,
+        is_draft=is_draft,
     )
 
     session.add(new_blog)
     await session.commit()
     await session.refresh(new_blog)
 
-    # listing followers of current user to create notification for them
-    followers = await session.execute(
-        select(UserFollowLink.follower_id).where(
-            UserFollowLink.following_id == current_user.id
-        )
-    )
-    followers_ids: List[int] = list(followers.scalars().all())
+    # Only send notifications if not a draft
+    if not is_draft:
 
-    await create_notifications(
-        request=request,
-        session=session,
-        owner_ids=followers_ids,
-        triggered_by_user_id=current_user.id,
-        notification_type=NotificationType.NEW_BLOG,
-        blog_id=new_blog.id,
-        message=f"{current_user.full_name} uploaded new blog {new_blog.title}",
-    )
-    # creating notificatoin for all users in single query
+        # listing followers of current user to create notification for them
+        followers = await session.execute(
+            select(UserFollowLink.follower_id).where(
+                UserFollowLink.following_id == current_user.id
+            )
+        )
+        followers_ids: List[int] = list(followers.scalars().all())
+
+        await create_notifications(
+            request=request,
+            session=session,
+            owner_ids=followers_ids,
+            triggered_by_user_id=current_user.id,
+            notification_type=NotificationType.NEW_BLOG,
+            blog_id=new_blog.id,
+            message=f"{current_user.full_name} uploaded new blog {new_blog.title}",
+        )
+        # creating notification for all users in single query
 
     if tags:
         # split tags by #
@@ -100,7 +105,7 @@ async def get_all_blogs(
     Returns a dict with total count, pagination info, and blog data.
     """
 
-    base_query = select(Blog).where(Blog.is_public == True)
+    base_query = select(Blog).where(Blog.is_public == True, Blog.is_draft == False)
 
     conditions = []
 
@@ -136,7 +141,7 @@ async def get_all_blogs(
 
     # create count query
     count_query = select(func.count(Blog.id)).where(  # type: ignore
-        Blog.is_public == True
+        Blog.is_public == True, Blog.is_draft == False
     )
 
     # apply conditions to count query
@@ -165,7 +170,9 @@ async def get_popular_blogs(
     Returns a dict with total count, pagination info, and blog data.
     """
 
-    base_query = select(Blog).where((Blog.is_public) & (Blog.engagement_score > 0))
+    base_query = select(Blog).where(
+        (Blog.is_public) & (Blog.engagement_score > 0) & (Blog.is_draft == False)
+    )
 
     # main query with pagination
     blogs_query = (
@@ -177,7 +184,7 @@ async def get_popular_blogs(
 
     # create count query
     count_query = select(func.count(Blog.id)).where(  # type: ignore
-        (Blog.is_public) & (Blog.engagement_score > 0)
+        (Blog.is_public) & (Blog.engagement_score > 0) & (Blog.is_draft == False)
     )
 
     # Execute both queries concurrently
@@ -324,6 +331,7 @@ async def update_blog(
     content: str | None,
     thumbnail: UploadFile | None,
     is_public: bool | None,
+    is_draft: bool | None,
     session: AsyncSession,
     current_user: int,
     thumbnail_path: str,
@@ -343,7 +351,7 @@ async def update_blog(
     if blog.author != current_user:
         raise HTTPException(status_code=403, detail="You are not the owner of the blog")
 
-    if not (title or thumbnail or content or is_public):
+    if not (title or thumbnail or content or is_public is not None or is_draft is not None):
         raise HTTPException(
             status_code=400, detail="At least one field must be provided for update"
         )
@@ -357,8 +365,10 @@ async def update_blog(
         blog.thumbnail_url = thumbnail_url
     if content:
         blog.content = content
-    if is_public:
+    if is_public is not None:
         blog.is_public = is_public
+    if is_draft is not None:
+        blog.is_draft = is_draft
 
     session.add(blog)
     await session.commit()
@@ -393,3 +403,105 @@ async def delete_blog(blog_id: int, session: AsyncSession, current_user: int):
     await session.commit()
 
     return blog.title
+
+
+async def get_user_drafts(
+    session: AsyncSession,
+    user_id: int,
+    limit: int = 10,
+    offset: int = 0,
+):
+    """
+    Retrieve paginated draft blogs for a specific user.
+
+    Returns a tuple of (blogs, total_count).
+    """
+    base_query = select(Blog).where(
+        Blog.author == user_id,
+        Blog.is_draft == True,
+    )
+
+    # Main query with pagination
+    blogs_query = (
+        base_query.options(selectinload(Blog.tags))  # type: ignore
+        .order_by(Blog.created_at.desc())  # type: ignore
+        .limit(limit)
+        .offset(offset)
+    )
+
+    # Count query
+    count_query = select(func.count(Blog.id)).where(  # type: ignore
+        Blog.author == user_id,
+        Blog.is_draft == True,
+    )
+
+    # Execute both queries concurrently
+    blogs_result, total_result = await asyncio.gather(
+        session.execute(blogs_query), session.execute(count_query)
+    )
+
+    blogs = blogs_result.scalars().all()
+    total = total_result.scalar_one()
+
+    return blogs, total
+
+
+async def publish_draft(
+    blog_id: int,
+    session: AsyncSession,
+    current_user: int,
+    request: Request,
+):
+    """
+    Convert a draft blog to a published blog.
+
+    Raises 404 if blog not found, 403 if user is not the owner,
+    400 if blog is not a draft.
+
+    Returns the published blog.
+    """
+    # Eager load tags
+    result = await session.execute(
+        select(Blog).where(Blog.id == blog_id).options(selectinload(Blog.tags))
+    )
+    blog = result.scalars().first()
+
+    if not blog:
+        raise HTTPException(status_code=404, detail="Blog not found")
+
+    if blog.author != current_user:
+        raise HTTPException(status_code=403, detail="You are not the owner of the blog")
+
+    if not blog.is_draft:
+        raise HTTPException(status_code=400, detail="Blog is already published")
+
+    blog.is_draft = False
+    session.add(blog)
+    await session.commit()
+
+    # Send notifications to followers
+    result = await session.execute(
+        select(User).where(User.id == current_user)
+    )
+    user = result.scalars().first()
+
+    followers = await session.execute(
+        select(UserFollowLink.follower_id).where(
+            UserFollowLink.following_id == current_user
+        )
+    )
+    followers_ids: List[int] = list(followers.scalars().all())
+
+    if followers_ids and user:
+        await create_notifications(
+            request=request,
+            session=session,
+            owner_ids=followers_ids,
+            triggered_by_user_id=current_user,
+            notification_type=NotificationType.NEW_BLOG,
+            blog_id=blog.id,
+            message=f"{user.full_name} uploaded new blog {blog.title}",
+        )
+
+    return blog
+

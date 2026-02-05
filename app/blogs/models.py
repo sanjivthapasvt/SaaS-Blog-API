@@ -31,11 +31,11 @@ class Blog(SQLModel, table=True):
     thumbnail_url: str | None = Field(default=None)
     content: str = Field(sa_column=Column(Text))
     author: int = Field(foreign_key="user.id", ondelete="CASCADE")
-    created_at: datetime = Field(
-        default=None,
+    created_at: Optional[datetime] = Field(
         sa_column=Column(TIMESTAMP(timezone=True), server_default=func.now()),
     )
     is_public: bool = Field(default=True)
+    is_draft: bool = Field(default=False, index=True)
 
     likes: list["User"] = Relationship(
         back_populates="liked_blogs", link_model=BlogLikeLink
@@ -98,8 +98,23 @@ class Comment(SQLModel, table=True):
     blog_id: int = Field(foreign_key="blog.id", index=True, ondelete="CASCADE")
     blog: Optional[Blog] = Relationship(back_populates="comments")
 
+    # Nested comments support
+    parent_id: int | None = Field(
+        default=None, foreign_key="comment.id", index=True, ondelete="CASCADE"
+    )
+
+    # Self-referential relationship for replies
+    replies: list["Comment"] = Relationship(
+        sa_relationship_kwargs={
+            "lazy": "selectin",
+            "order_by": "Comment.created_at",
+            "cascade": "all, delete-orphan",
+        }
+    )
+
 
 # to resolve string references for type checking
 Blog.model_rebuild()
 Comment.model_rebuild()
 Tag.model_rebuild()
+

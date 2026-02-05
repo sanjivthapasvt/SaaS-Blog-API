@@ -7,9 +7,17 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependency import get_current_user
-from app.blogs.crud.blogs import (create_new_blog, delete_blog, get_all_blogs,
-                                  get_blog_by_id, get_popular_blogs,
-                                  get_recommended_blogs, update_blog)
+from app.blogs.crud.blogs import (
+    create_new_blog,
+    delete_blog,
+    get_all_blogs,
+    get_blog_by_id,
+    get_popular_blogs,
+    get_recommended_blogs,
+    get_user_drafts,
+    publish_draft,
+    update_blog,
+)
 from app.blogs.schema import BlogContentResponse, BlogResponse
 from app.core.services.database import get_session
 from app.models.schema import CommonParams, PaginatedResponse
@@ -34,6 +42,7 @@ async def create_blog_route(
     title: str = Form(..., max_length=500),
     content: str = Form(...),
     tags: str | None = Form(None),
+    is_draft: bool = Form(False),
     thumbnail: UploadFile | None = None,
     session: AsyncSession = Depends(get_session),
     current_user: CurrentUserRead = Depends(get_current_user),
@@ -50,6 +59,7 @@ async def create_blog_route(
             content=content,
             current_user=current_user,
             tags=tags,
+            is_draft=is_draft,
         )
 
         title = new_blog.title
@@ -146,6 +156,48 @@ async def get_popular_blogs_route(
 
 
 @router.get(
+    "/blogs/drafts",
+    response_model=PaginatedResponse[BlogResponse],
+    dependencies=[
+        Depends(RateLimiter(times=60, minutes=1, identifier=user_identifier))
+    ],
+)
+async def get_draft_blogs_route(
+    limit: int = Query(default=10),
+    offset: int = Query(default=0),
+    session: AsyncSession = Depends(get_session),
+    current_user: CurrentUserRead = Depends(get_current_user),
+):
+    """Retrieve current user's draft blogs."""
+    try:
+        blogs_result, total_result = await get_user_drafts(
+            session=session,
+            user_id=current_user.id,
+            limit=limit,
+            offset=offset,
+        )
+        # validates response and set tags as list of strings
+        data = [
+            BlogResponse.model_validate(
+                blog.model_copy(update={"tags": [tag.title for tag in blog.tags]})
+            )
+            for blog in blogs_result
+        ]
+
+        return PaginatedResponse[BlogResponse](
+            total=total_result, limit=limit, offset=offset, data=data
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Something went wrong while getting drafts {str(e)}"
+        )
+
+
+@router.get(
     "/blogs/{blog_id}/recommendation",
     response_model=List[BlogResponse],
     dependencies=[
@@ -215,12 +267,13 @@ async def update_blog_route(
     blog_id: int,
     title: str | None = Form(None),
     content: str | None = Form(None),
-    is_pubic: bool | None = Form(True),
+    is_public: bool | None = Form(None),
+    is_draft: bool | None = Form(None),
     thumbnail: UploadFile | None = None,
     session: AsyncSession = Depends(get_session),
     current_user: CurrentUserRead = Depends(get_current_user),
 ):
-    """Update a blog post's title, content, or thumbnail."""
+    """Update a blog post's title, content, thumbnail, or status."""
     try:
         await update_blog(
             session=session,
@@ -228,7 +281,8 @@ async def update_blog_route(
             title=title,
             content=content,
             thumbnail=thumbnail,
-            is_public=is_pubic,
+            is_public=is_public,
+            is_draft=is_draft,
             current_user=current_user.id,
             thumbnail_path=thumbnail_path,
         )
@@ -269,3 +323,37 @@ async def delete_blog_route(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{str(e)}")
+
+
+@router.post(
+    "/blogs/{blog_id}/publish",
+    response_model=BlogResponse,
+    dependencies=[
+        Depends(RateLimiter(times=10, minutes=1, identifier=user_identifier))
+    ],
+)
+async def publish_draft_route(
+    request: Request,
+    blog_id: int,
+    session: AsyncSession = Depends(get_session),
+    current_user: CurrentUserRead = Depends(get_current_user),
+):
+    """Publish a draft blog."""
+    try:
+        blog = await publish_draft(
+            blog_id=blog_id,
+            session=session,
+            current_user=current_user.id,
+            request=request,
+        )
+        
+        # Format tags
+        return BlogResponse.model_validate(
+            blog.model_copy(update={"tags": [tag.title for tag in blog.tags]})
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Something went wrong {str(e)}")
