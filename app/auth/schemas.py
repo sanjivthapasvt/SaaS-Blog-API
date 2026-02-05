@@ -25,3 +25,25 @@ class Token(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str
+
+
+class EmailVerificationRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: Annotated[str, StringConstraints(min_length=8, max_length=250)]
+
+
+class MessageResponse(BaseModel):
+    detail: str
+

@@ -39,7 +39,9 @@ async def authenticate_user(session: AsyncSession, username: str, password: str)
 
 
 async def register_user(session: AsyncSession, user_data):
-    user_data.username = re.sub(r"\s+", "", user_data.username)
+    from app.auth.crud.verification import send_verification_email_for_user
+
+    user_data.username = re.sub(r"\\s+", "", user_data.username)
 
     # Check if username exists
     user = await session.execute(
@@ -68,10 +70,17 @@ async def register_user(session: AsyncSession, user_data):
         email=user_data.email,
         full_name=full_name,
         hashed_password=hash_password(user_data.password),
+        is_verified=False,  # User must verify email
     )
     session.add(new_user)
     await session.commit()
     await session.refresh(new_user)
+
+    # Send verification email (don't block registration if email fails)
+    try:
+        await send_verification_email_for_user(session, new_user)
+    except Exception:
+        pass  # Log error is handled in the function
 
     access_token = create_access_token({"sub": new_user.username})
     refresh_token = create_refresh_token({"sub": new_user.username})
