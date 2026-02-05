@@ -5,3 +5,4 @@ database.db*
 media/
 *.db
 .pytest_cache
+.vscode
