@@ -11,6 +11,7 @@ from app.core.services.database import get_session
 from app.models.schema import CommonParams, PaginatedResponse
 from app.users.schema import UserRead
 from app.utils.common_params import get_common_params
+from app.utils.logger import logger
 from app.utils.rate_limiter import user_identifier
 
 router = APIRouter(tags=["Admin - User"])
@@ -54,11 +55,13 @@ async def create_new_user_route(
     """
     try:
         user = await create_user(session, user_data)
+        logger.info(f"Admin created user: {user.username}")
         return f"Created user {user.username} successfully!"
     except HTTPException:
         raise
 
     except Exception as e:
+        logger.error(f"Error creating user: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Something went wrong while registering{str(e)}"
         )
@@ -103,11 +106,13 @@ async def update_user_route(
     """
     try:
         user = await update_user(session, user_id, user_data)
+        logger.info(f"Admin updated user {user_id}. Data: {user_data.model_dump(exclude_unset=True)}")
         return f"Updated user {user.username} successfully!"
     except HTTPException:
         raise
 
     except Exception as e:
+        logger.error(f"Error updating user {user_id}: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Something went wrong while registering{str(e)}"
         )
@@ -126,11 +131,13 @@ async def delete_user_route(
     """
     try:
         user = await delete_user(session, user_id)
+        logger.info(f"Admin deleted user {user_id} ({user})")
         return f"Deleted user {user} successfully!"
     except HTTPException:
         raise
 
     except Exception as e:
+        logger.error(f"Error deleting user {user_id}: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Something went wrong while registering{str(e)}"
         )
