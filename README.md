@@ -88,6 +88,21 @@ fastapi dev app/main.py
 uvicorn app.main:app --reload
 ```
 
+### 5. Run the Next.js frontend (optional)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Configure `frontend/.env.local`:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+```
+
+
 ---
 
 ## 📚 API Documentation  
