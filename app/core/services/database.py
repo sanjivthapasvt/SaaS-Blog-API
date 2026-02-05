@@ -9,7 +9,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///database.db")  # f
 
 engine = create_async_engine(
     DATABASE_URL,
-    echo=False,
+    echo=True,
     pool_size=10,
     max_overflow=5,
 )
