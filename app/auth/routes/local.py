@@ -58,13 +58,19 @@ async def register_user_route(
 
 @router.post("/logout")
 async def logout_user_route(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     blacklist: TokenBlacklist = Depends(get_token_blacklist),
 ):
     """
     Logout user by blacklisting their current token.
     Requires valid access token in Authorization header.
     """
+    if credentials is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     try:
         return await logout_user(credentials.credentials, blacklist)
     except HTTPException:
