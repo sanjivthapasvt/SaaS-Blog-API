@@ -6,3 +6,4 @@ media/
 *.db
 .pytest_cache
 .vscode
+test.html
